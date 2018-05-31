@@ -1,52 +1,60 @@
 /* FILENAME: peakDetectorNode.js
  * AUTHOR: Hank Wikle
- * LAST MODIFIED: 30 May 2018
- * DESCRIPTION: Implements custom audio node for peak detection
+ * LAST MODIFIED: 31 May 2018
+ * DESCRIPTION: Implements custom audio node for peak detection using the Smoothed Z-Score Algorithm
+ *              adapted from https://stackoverflow.com/a/22640362/6029703
  */
 
-/*
-class PeakDetectorNode extends AudioNode {
-    connect() {
-        console.log('connected!');
-        super.connect.apply(this, arguments);
-    }
-}
-*/
+'use strict';
 
-function peakDetectorNode(context, lag, zscore, influence) {
-    this.lag = lag;
-    this.zscore = zscore;
-    this.influence = influence;
-    this.threshold;
-    this.mean;
-    this.filteredInput = [];
+const IN_BUFFER_LENGTH = 256;
 
-    this.node = context.createScriptProcessor(256, 1, 1);
+function peakDetectorNode(context, lag, zscore, influence, verbose=false) {
+    let threshold = 0;
+    let mu = 0;
+    let lagWindow = new Array(lag).fill(0);
+
+    console.log('Threshold:', threshold);
+    console.log('Mu:', mu);
+    console.log('Lag window:', lagWindow);
+
+    this.node = context.createScriptProcessor(IN_BUFFER_LENGTH, 1, 1);
     this.node.onaudioprocess = function(e) {
+        if (verbose)
+            console.log('           Beginning peak detection...');
         let input = e.inputBuffer.getChannelData(0);
         let output = e.outputBuffer.getChannelData(0);
-
-        if (this.buffer.length == 5 && Math.abs(input - this.mean) > this.threshold) {
-            output[0] = 1;
-            this.filteredInput.push(influence * input - (1 - influence) * filteredInput[-1]);
-            this.filteredInput.shift();
-        } else {
-            output[0] = 0;
-            this.filteredInput.push(input);
-
-            if (this.filteredInput.length > 5) {
-                this.filteredInput.shift();
+        
+        for (let i=0; i<IN_BUFFER_LENGTH; i++) {
+            if (verbose) {
+                console.log('           Lag Window:', lagWindow);
+                console.log('           mu:', mu);
+                console.log('           threshold:', threshold);
             }
-        }
 
-        meanStd = mean(filteredInput);
-        this.mean = meanStd[0];
-        this.threshold = this.threshold * meanStd[1];
+            if (Math.abs(input[i] - mu) > threshold) {
+                output[i] = 1;
+                lagWindow.push(influence * input[i] - (1 - influence) * lagWindow[-1]);
+                let t = context.currentTime;
+                console.log('Peak found:', t);
+                if (verbose)
+                    console.log('           Peak found:', context.currentTime);
+            } else {
+                output[i] = 0;
+                lagWindow.push(input[i]);
+                //console.log('No peak found');
+            }
+            lagWindow.shift();
+
+            let meanStd = mean(lagWindow);
+            mu = meanStd[0];
+            threshold = zscore * meanStd[1];
+        }
     }
 }
 
-AudioContext.prototype.createPeakDetector = function(lag, threshold, influence) {
-    return new peakDetectorNode(this, lag, threshold, influence);
+AudioContext.prototype.createPeakDetector = function(lag, threshold, influence, verbose) {
+    return new peakDetectorNode(this, lag, threshold, influence, verbose);
 }
 
 function mean(v) {
@@ -63,7 +71,7 @@ function mean(v) {
         sqTotal += Math.pow((v[i] - mean), 2);
 
     let std = sqTotal / v.length;
-    result = [mean, std];
+    let result = [mean, std];
 
     return result;
 }
