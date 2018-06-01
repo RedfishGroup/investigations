@@ -1,6 +1,6 @@
 /* FILENAME: audio.js
  * AUTHOR: Hank Wikle
- * LAST MODIFIED: 31 May 2018
+ * LAST MODIFIED: 1 June 2018
  * DESCRIPTION: Finds the time values of peaks in the given audio file (unfinished).
  *
  * NEXT STEPS: Learn how to use buffers/streaming, clean up global variables
@@ -9,10 +9,10 @@
 'use strict';
 
 const LAG = 5;
-const ZSCORE = 3.5;
+const ZSCORE = 50;
 const INFLUENCE = 0.5;
 const SAMPLE_RATE = 44100;
-const BUFFER_LENGTH = 10*SAMPLE_RATE;
+const BUFFER_LENGTH = SAMPLE_RATE;
 const VERBOSE = false;
 
 window.onload = function() {
@@ -29,17 +29,21 @@ window.onload = function() {
     if (VERBOSE)
         console.log('Initializing context...');
 
-    let offCtx = new OfflineAudioContext(1, BUFFER_LENGTH, SAMPLE_RATE);
-    let source = offCtx.createBufferSource();
-    let detector = offCtx.createPeakDetector(LAG, ZSCORE, INFLUENCE, VERBOSE); 
+    //let offCtx = new OfflineAudioContext(1, BUFFER_LENGTH, SAMPLE_RATE);
+    let onCtx = new AudioContext();
+    //let source = offCtx.createBufferSource();
+    let source = onCtx.createBufferSource();
+    //let detector = offCtx.createPeakDetector(LAG, ZSCORE, INFLUENCE, VERBOSE); 
+    let debug = onCtx.createDebugNode();
 
-    source.connect(detector.node);
+    //source.connect(detector.node);
+    source.connect(debug.node);
 
     reader.onload = function() {
         if (VERBOSE)
             console.log('   Decoding audio...');
         
-        offCtx.decodeAudioData(this.result, function(buffer) {
+        /*offCtx.decodeAudioData(this.result, function(buffer) {
             if (VERBOSE)
                 console.log('   Audio decoded successfully!');
             source.buffer = buffer;
@@ -50,8 +54,13 @@ window.onload = function() {
                 if (VERBOSE)
                     console.log('       Rendering completed successfully!');
                 let peaks = renderedBuffer;
-                console.log(sum(renderedBuffer.getChannelData(0)));
             });
+        }); */ 
+
+        onCtx.decodeAudioData(this.result, function(buffer) {
+            console.log('Decoding audio...');
+            source.buffer = buffer;
+            source.start();
         }); 
     };
 }
