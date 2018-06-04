@@ -42,6 +42,7 @@ export class Visualizer extends Model {
     this.numWaves = buffer.length;
     //this.freqs = freqs;
     this.buffer = buffer;
+    this.cmap = ColorMap.Rgb256;
 
     this.patches.ask(p => {
       if (abs(p.y) < MAX_Y && p.y % this.numWaves === 0) {
@@ -71,20 +72,14 @@ export class Visualizer extends Model {
     for (let i = 0; i < this.buffer.length; i++) s = s + `${this.buffer[i]} `;
     console.log(s);
 
-    /*let maxEnergy = max(...patches.energy);
-
-        this.patches.ask(p => {
-            p.color = scaleColor('red', p.energy, -1*maxEnergy, maxEnergy); // Does this function exist?  }); */
+    //let maxEnergy = max(...patches.energy);
+    let maxEnergy = 300;
+    if (Math.random() > 0.9) {
+      this.patches.forEach(p => {
+        this.patches.scaleColors(this.cmap, "energy", 0, maxEnergy);
+        //p.color = scaleColor("red", p.energy, -1 * maxEnergy, maxEnergy);
+      });
+    }
     this.ticks++; // ++ in JS?
   }
 }
-
-//const options = Model.defaultWorld(125); // What should the default world be?
-// const model = new Visualizer();
-//model.setup();
-//model.start();
-
-//const { world, patches, links, nodes } = model;
-// util.toWindow({ world, patches, links, nodes, model });
-
-//util.yieldLoop(() => model.step(), 500); // How do I infinitely loop?
