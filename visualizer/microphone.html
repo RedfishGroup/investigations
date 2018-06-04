@@ -1,0 +1,50 @@
+<!--
+FILENAME: microphone.html
+AUTHOR: Hank Wikle
+LAST MODIFIED: 4 June 2018
+-->
+
+<!DOCTYPE html>
+<meta charset="UTF-8">
+
+<html>
+    <script src="./node_modules/@redfish/agentscript/dist/agentscript.umd.min.js" type="text/javascript"></script>
+    <!--    <script src="./node_modules/@redfish/as-app3d/dist/as-app3d.umd.min.js" type="text/javascript"></script> -->
+    <script src="./visualizer.js" type="text/javascript"></script>
+    <script type="text/javascript">
+
+        'use strict';
+
+        const BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
+        const viz = new Visualizer();
+
+        window.onload = function() {
+
+            // Set up audio context
+
+            const ctx = new AudioContext();
+            const constraints = {audio: true};
+            var source;
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 2*BINS;
+            
+            const freqData = new Uint8Array(analyser.frequencyBinCount);
+            viz.setup(freqData);
+
+            function renderFrame() {
+                requestAnimationFrame(renderFrame);
+                analyser.getByteFrequencyData(freqData);
+                viz.step();
+            }
+
+            let handleSuccess = function(stream) {
+                source = ctx.createMediaStreamSource(stream);
+                source.connect(analyser);
+                renderFrame();
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(handleSuccess);
+        }
+    </script>
+</html>
