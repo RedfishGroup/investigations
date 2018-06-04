@@ -80,11 +80,11 @@ export class Visualizer extends Model {
 }
 
 //const options = Model.defaultWorld(125); // What should the default world be?
-const model = new Visualizer();
-model.setup();
-model.start();
+// const model = new Visualizer();
+//model.setup();
+//model.start();
 
-const { world, patches, links, nodes } = model;
-util.toWindow({ world, patches, links, nodes, model });
+//const { world, patches, links, nodes } = model;
+// util.toWindow({ world, patches, links, nodes, model });
 
-util.yieldLoop(() => model.step(), 500); // How do I infinitely loop?
+//util.yieldLoop(() => model.step(), 500); // How do I infinitely loop?
