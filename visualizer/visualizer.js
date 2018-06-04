@@ -31,7 +31,7 @@ const INIT_ENERGY = 100;
 const DIFFUSION_AMT = 0.5;
 const MAX_Y = CANVAS_HEIGHT / 2;
 
-util.toWindow({ Model, modelIO, util });
+util.toWindow({ Model, util });
 
 export class Visualizer extends Model {
   setup(buffer) {
@@ -79,21 +79,12 @@ export class Visualizer extends Model {
   }
 }
 
-const usingPuppeteer = navigator.userAgent === "Puppeteer";
-
-if (usingPuppeteer) util.randomSeed(); // Do I need this?
-
-const options = Model.defaultWorld(125); // What should the default world be?
-const model = new Visualizer(options);
+//const options = Model.defaultWorld(125); // What should the default world be?
+const model = new Visualizer();
 model.setup();
+model.start();
 
 const { world, patches, links, nodes } = model;
 util.toWindow({ world, patches, links, nodes, model });
 
 util.yieldLoop(() => model.step(), 500); // How do I infinitely loop?
-
-if (usingPuppeteer) {
-  // Do I need this?
-  window.modelDone = model.modelDone = true;
-  window.modelSample = model.modelSample = modelIO.sampleJSON(model);
-}
