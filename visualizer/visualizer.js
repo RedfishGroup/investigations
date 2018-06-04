@@ -1,22 +1,14 @@
 /* FILENAME: visualizer.js
  * AUTHOR: Hank Wikle
- * LAST MODIFIED: 3 June 2018
+ * LAST MODIFIED: 4 June 2018
  * DESCRIPTION: Live audio visualizer for Ozomatli performance at Interplanetary Festival 06/07/2018
 */
 
 // How do I include this code in my html file?
 
-//import Model from '../node_modules/@redfish/agentscript/dist/agentscript.esm.min.js';
-//import * as modelIO from '../node_modules/@redfish/agentscript/dist/agentscript.esm.min.js';
-//import util from '../node_modules/@redfish/agentscript/dist/agentscript.esm.min.js';
-
-//Model = ASapp3d.Model;
-//modelIO = ASapp3d.modelIO;
-//util = ASapp3d.util;
-
-const Model = AS.Model;
-const modelIO = AS.modelIO;
-const util = AS.util;
+Model = ASapp3d.Model;
+modelIO = ASapp3d.modelIO;
+util = ASapp3d.util;
 
 let abs = Math.abs;
 let sin = Math.sin;
@@ -86,7 +78,7 @@ class Visualizer extends Model {
      }
 }
 
-/* const usingPuppeteer = navigator.userAgent === 'Puppeteer';
+const usingPuppeteer = navigator.userAgent === 'Puppeteer';
 
 if (usingPuppeteer)
     util.randomSeed(); // Do I need this?
@@ -103,4 +95,4 @@ util.yieldLoop(() => model.step(), 500); // How do I infinitely loop?
 if (usingPuppeteer) { // Do I need this?
     window.modelDone = model.modelDone = true;
     window.modelSample = model.modelSample = modelIO.sampleJSON(model);
-} */
+}

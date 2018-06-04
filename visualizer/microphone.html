@@ -8,8 +8,8 @@ LAST MODIFIED: 4 June 2018
 <meta charset="UTF-8">
 
 <html>
-    <script src="./node_modules/@redfish/agentscript/dist/agentscript.umd.min.js" type="text/javascript"></script>
-    <!--    <script src="./node_modules/@redfish/as-app3d/dist/as-app3d.umd.min.js" type="text/javascript"></script> -->
+    <script src="https://unpkg.com/@redfish/agentscript@0.2.0/dist/agentscript.umd.js" type="text/javascript"></script>
+    <script src="https://unpkg.com/@redfish/as-app3d@0.3.1/dist/as-app3d.umd.js" type="text/javascript"></script>
     <script src="./visualizer.js" type="text/javascript"></script>
     <script type="text/javascript">
 
@@ -34,7 +34,6 @@ LAST MODIFIED: 4 June 2018
             function renderFrame() {
                 requestAnimationFrame(renderFrame);
                 analyser.getByteFrequencyData(freqData);
-                viz.step();
             }
 
             let handleSuccess = function(stream) {
