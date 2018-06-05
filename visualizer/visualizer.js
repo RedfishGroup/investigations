@@ -4,8 +4,8 @@
  * DESCRIPTION: Live audio visualizer for Ozomatli performance at Interplanetary Festival 06/07/2018
 */
 
-util = ASapp3d.util;
-Model = ASapp3d.Model;
+import {util, ColorMap, Model} from "https://unpkg.com/@redfish/as-app3d?module";
+//import {util, ColorMap, Model} from '../node_modules/@redfish/as-app3d/docs/dist/as-app3d.esm.js';
 
 //Model = AS.Model;
 //util = AS.util;
@@ -16,9 +16,23 @@ let max = Math.max;
 
 const SAMPLE_RATE = 44100;
 //const FFT_SIZE = 2*BINS;
-const NUM_WAVES = 10;
 const CANVAS_HEIGHT = 100;
 const CANVAS_WIDTH = 500;
+
+const MOUSE_SIZE = 5;
+const IMPULSE_ENERGY = 9.34;
+const COMPUTE_DIFFUSION = false;
+const DIFFUSION_RATE = 0.13
+const DIFFUSION_ITERATIONS = 1;
+const EVAPORATION = 0.38;
+const COMPUTE_WAVES = true;
+const WAVE_ITERATIONS = true;
+const ENERGIZE_FIELD = false;
+const POWER_FREQ_1 = 2.31;
+const POWER_SCALE = 0.20;
+const SURFACE_TENSION = 44.35;
+const FRICTION = 0.80;
+const RANDOMIZE_POWER = false;
 
 //var FREQS = []; // Choose one frequency per band on water tower, evenly spaced
 
@@ -31,7 +45,7 @@ const MAX_Y = CANVAS_HEIGHT / 2;
 
 util.toWindow({Model, util});
 
-class Visualizer extends Model {
+export class Visualizer extends Model {
     setup(buffer) {
         this.ticks = 0;
         this.patchBreeds('nodes');
@@ -40,6 +54,7 @@ class Visualizer extends Model {
         //this.freqs = freqs;
         this.buffer = buffer;
         this.numWaves = this.buffer.length;
+        this.cmap=ColorMap.Rgb256;
 
         this.patches.ask(p => {
             if ((abs(p.y) < MAX_Y) && (p.y % this.numWaves === 0)) {
@@ -70,15 +85,13 @@ class Visualizer extends Model {
            s = s + `${this.buffer[i]} `;
         console.log(s);
 
-        /*let maxEnergy = max(...patches.energy);
+        let maxEnergy = 300;
 
-        this.patches.ask(p => {
-            p.color = scaleColor('red', p.energy, -1*maxEnergy, maxEnergy); // Does this function exist?  }); */
+        this.patches.scaleColors(this.cmap, "energy", 0, maxEnergy);
         this.ticks++; // ++ in JS?
      }
 }
 
-const ctx = new AudioContext();
 /*const usingPuppeteer = navigator.userAgent === 'Puppeteer';
 
 if (usingPuppeteer)

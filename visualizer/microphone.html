@@ -8,19 +8,16 @@ LAST MODIFIED: 5 June 2018
 <meta charset="UTF-8">
 
 <html>
-    <head>
-    <script src="https://unpkg.com/@redfish/as-app3d"></script>
-    <script src="https://unpkg.com/@redfish/agentscript"></script>
-    <script src="./visualizer.js"></script>
-    <script>
+    <div id="modeldiv"></div>
+    <script type="module" type="text/javascript">
+        console.log('test');
+        import {Visualizer} from './visualizer.js';
+
         const NUM_BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
 
-        var model = new Model();
         var freqData = new Uint8Array(NUM_BINS);
-        var viz = new Visualizer();
+        var viz = new Visualizer(document.body, {minX: -10, maxX: 10, minY: -10, maxY: 10});
         viz.setup(freqData);
-
-        window.onload = function() {
 
             // Set up audio context
 
@@ -43,9 +40,5 @@ LAST MODIFIED: 5 June 2018
             };
 
             navigator.mediaDevices.getUserMedia(constraints).then(handleSuccess);
-        }
-    </script></head>
-    <body>
-        <div id="modeldiv"></div>
-    </body>
+    </script>
 </html>
