@@ -8,37 +8,38 @@ LAST MODIFIED: 5 June 2018
 <meta charset="UTF-8">
 
 <html>
-    <div id="modeldiv"></div>
-    <script type="module" type="text/javascript">
-        console.log('test');
-        import {Visualizer} from './visualizer.js';
+<div id="modeldiv"></div>
+<script type="module" type="text/javascript">
+    console.log('test');
+    import { Visualizer } from './visualizer.js';
 
-        const NUM_BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
+    const NUM_BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
 
-        var freqData = new Uint8Array(NUM_BINS);
-        var viz = new Visualizer(document.body, {minX: -10, maxX: 10, minY: -10, maxY: 10});
-        viz.setup(freqData);
+    var freqData = new Uint8Array(NUM_BINS);
+    var viz = new Visualizer(document.body, { minX: -10, maxX: 10, minY: -10, maxY: 10 });
+    viz.setup(freqData);
 
-            // Set up audio context
+    // Set up audio context
 
-            const ctx = new AudioContext();
-            const constraints = {audio: true};
-            var source;
-            const analyser = ctx.createAnalyser();
-            analyser.fftSize = 2*NUM_BINS;
-            
-            function renderFrame() {
-                requestAnimationFrame(renderFrame);
-                analyser.getByteFrequencyData(freqData);
-                viz.step();
-            }
+    const ctx = new AudioContext();
+    const constraints = { audio: true };
+    var source;
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 2 * NUM_BINS;
 
-            let handleSuccess = function(stream) {
-                source = ctx.createMediaStreamSource(stream);
-                source.connect(analyser);
-                renderFrame();
-            };
+    function renderFrame() {
+        requestAnimationFrame(renderFrame);
+        analyser.getByteFrequencyData(freqData);
+        viz.step();
+    }
 
-            navigator.mediaDevices.getUserMedia(constraints).then(handleSuccess);
-    </script>
+    let handleSuccess = function (stream) {
+        source = ctx.createMediaStreamSource(stream);
+        source.connect(analyser);
+        renderFrame();
+    };
+
+    navigator.mediaDevices.getUserMedia(constraints).then(handleSuccess);
+</script>
+
 </html>
