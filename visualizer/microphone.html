@@ -1,22 +1,24 @@
 <!--
 FILENAME: microphone.html
 AUTHOR: Hank Wikle
-LAST MODIFIED: 4 June 2018
+LAST MODIFIED: 5 June 2018
 -->
 
 <!DOCTYPE html>
 <meta charset="UTF-8">
 
 <html>
-    <script src="https://unpkg.com/@redfish/agentscript@0.2.0/dist/agentscript.umd.js" type="text/javascript"></script>
-    <script src="https://unpkg.com/@redfish/as-app3d@0.3.1/dist/as-app3d.umd.js" type="text/javascript"></script>
-    <script src="./visualizer.js" type="text/javascript"></script>
-    <script type="text/javascript">
+    <head>
+    <script src="https://unpkg.com/@redfish/as-app3d"></script>
+    <script src="https://unpkg.com/@redfish/agentscript"></script>
+    <script src="./visualizer.js"></script>
+    <script>
+        const NUM_BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
 
-        'use strict';
-
-        const BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
-        const viz = new Visualizer();
+        var model = new Model();
+        var freqData = new Uint8Array(NUM_BINS);
+        var viz = new Visualizer();
+        viz.setup(freqData);
 
         window.onload = function() {
 
@@ -26,14 +28,12 @@ LAST MODIFIED: 4 June 2018
             const constraints = {audio: true};
             var source;
             const analyser = ctx.createAnalyser();
-            analyser.fftSize = 2*BINS;
+            analyser.fftSize = 2*NUM_BINS;
             
-            const freqData = new Uint8Array(analyser.frequencyBinCount);
-            viz.setup(freqData);
-
             function renderFrame() {
                 requestAnimationFrame(renderFrame);
                 analyser.getByteFrequencyData(freqData);
+                viz.step();
             }
 
             let handleSuccess = function(stream) {
@@ -42,8 +42,10 @@ LAST MODIFIED: 4 June 2018
                 renderFrame();
             };
 
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then(handleSuccess);
+            navigator.mediaDevices.getUserMedia(constraints).then(handleSuccess);
         }
-    </script>
+    </script></head>
+    <body>
+        <div id="modeldiv"></div>
+    </body>
 </html>

@@ -1,14 +1,14 @@
 /* FILENAME: visualizer.js
  * AUTHOR: Hank Wikle
- * LAST MODIFIED: 4 June 2018
+ * LAST MODIFIED: 5 June 2018
  * DESCRIPTION: Live audio visualizer for Ozomatli performance at Interplanetary Festival 06/07/2018
 */
 
-// How do I include this code in my html file?
-
-Model = ASapp3d.Model;
-modelIO = ASapp3d.modelIO;
 util = ASapp3d.util;
+Model = ASapp3d.Model;
+
+//Model = AS.Model;
+//util = AS.util;
 
 let abs = Math.abs;
 let sin = Math.sin;
@@ -29,17 +29,17 @@ const INIT_ENERGY = 100;
 const DIFFUSION_AMT = 0.5;
 const MAX_Y = CANVAS_HEIGHT / 2;
 
-util.toWindow({Model, modelIO, util});
+util.toWindow({Model, util});
 
 class Visualizer extends Model {
     setup(buffer) {
         this.ticks = 0;
         this.patchBreeds('nodes');
-        this.patches.own('energy');
+        this.patches.own('energy displaceX displaceY temp energyVelocity storedEnergy');
         this.nodes.own('phase restY waveNum');
-        this.numWaves = buffer.length;
         //this.freqs = freqs;
         this.buffer = buffer;
+        this.numWaves = this.buffer.length;
 
         this.patches.ask(p => {
             if ((abs(p.y) < MAX_Y) && (p.y % this.numWaves === 0)) {
@@ -47,8 +47,8 @@ class Visualizer extends Model {
                     n.restY = n.y;
                     n.waveNum = n.y / this.numWaves;
                 });
-                p.energy = util.randomInt(INIT_ENERGY) - INIT_ENERGY / 2; // Guessed at this function
             }
+            
         });
         this.nodes.ask(n => {
             n.phase = n.x //* freqs[n.waveNum];
@@ -78,7 +78,8 @@ class Visualizer extends Model {
      }
 }
 
-const usingPuppeteer = navigator.userAgent === 'Puppeteer';
+const ctx = new AudioContext();
+/*const usingPuppeteer = navigator.userAgent === 'Puppeteer';
 
 if (usingPuppeteer)
     util.randomSeed(); // Do I need this?
@@ -95,4 +96,4 @@ util.yieldLoop(() => model.step(), 500); // How do I infinitely loop?
 if (usingPuppeteer) { // Do I need this?
     window.modelDone = model.modelDone = true;
     window.modelSample = model.modelSample = modelIO.sampleJSON(model);
-}
+}*/
