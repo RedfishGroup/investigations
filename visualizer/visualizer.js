@@ -40,7 +40,7 @@ export class Visualizer extends Model {
     this.numWaves = buffer.length;
     //this.freqs = freqs;
     this.buffer = buffer;
-    this.cmap = ColorMap.Rgb256;
+    this.cmap = ColorMap.Jet;
 
     this.patches.ask(p => {
       if (abs(p.y) < MAX_Y && p.y % this.numWaves === 0) {
@@ -59,12 +59,18 @@ export class Visualizer extends Model {
   }
 
   step() {
-    this.nodes.ask(n => {
+    /*this.nodes.ask(n => {
       n.energy += n.y - n.restY;
+      n.energy = Math.random() * 300;
       n.y = n.restY + this.buffer[n.waveNum] * sin(this.ticks + n.phase); // Correct use of this?
+    });*/
+
+    this.patches.forEach(p => {
+      p.energy = Math.floor(this.buffer[p.x] / 10) * 10;
+      p.energy = p.energy / (Math.abs(p.y / 4) + 1);
     });
 
-    this.patches.diffuse("energy", DIFFUSION_AMT);
+    //this.patches.diffuse("energy", DIFFUSION_AMT);
 
     let s = "";
     for (let i = 0; i < this.buffer.length; i++) s = s + `${this.buffer[i]} `;
@@ -72,12 +78,12 @@ export class Visualizer extends Model {
 
     //let maxEnergy = max(...patches.energy);
     let maxEnergy = 300;
-    if (Math.random() > 0.9) {
-      this.patches.forEach(p => {
-        this.patches.scaleColors(this.cmap, "energy", 0, maxEnergy);
-        //p.color = scaleColor("red", p.energy, -1 * maxEnergy, maxEnergy);
-      });
-    }
+    //if (Math.random() > 0.9) {
+    //this.patches.forEach(p => {
+    this.patches.scaleColors(this.cmap, "energy", 0, maxEnergy);
+    //p.color = scaleColor("red", p.energy, -1 * maxEnergy, maxEnergy);
+    //});
+    //}
     this.ticks++; // ++ in JS?
   }
 }

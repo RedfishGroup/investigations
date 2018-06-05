@@ -16,7 +16,7 @@ LAST MODIFIED: 4 June 2018
     import { Visualizer } from './visualizer.js'
 
     const BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
-    const viz = new Visualizer(document.body, { minX: -10, maxX: 10, minY: -10, maxY: 10 });
+    const viz = new Visualizer(document.body, { minX: 0, maxX: BINS - 1, minY: -10, maxY: 10 });
 
     // window.onload = function () {
 
@@ -34,6 +34,7 @@ LAST MODIFIED: 4 June 2018
     function renderFrame() {
         requestAnimationFrame(renderFrame);
         analyser.getByteFrequencyData(freqData);
+        //viz.buffer = freqData
         viz.step()
     }
 
