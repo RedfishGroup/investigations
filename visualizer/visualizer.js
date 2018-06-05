@@ -31,8 +31,6 @@ const INIT_ENERGY = 100;
 const DIFFUSION_AMT = 0.5;
 const MAX_Y = CANVAS_HEIGHT / 2;
 
-util.toWindow({ Model, util });
-
 export class Visualizer extends Model {
   setup(buffer) {
     this.ticks = 0;
@@ -70,7 +68,7 @@ export class Visualizer extends Model {
 
     let s = "";
     for (let i = 0; i < this.buffer.length; i++) s = s + `${this.buffer[i]} `;
-    console.log(s);
+    //console.log(s);
 
     //let maxEnergy = max(...patches.energy);
     let maxEnergy = 300;
@@ -83,3 +81,5 @@ export class Visualizer extends Model {
     this.ticks++; // ++ in JS?
   }
 }
+
+util.toWindow({ Model, util });
