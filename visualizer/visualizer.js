@@ -1,6 +1,6 @@
 /* FILENAME: visualizer.js
  * AUTHOR: Hank Wikle
- * LAST MODIFIED: 5 June 2018
+ * LAST MODIFIED: 6 June 2018
  * DESCRIPTION: Live audio visualizer for Ozomatli performance at Interplanetary Festival 06/07/2018
 */
 
@@ -23,30 +23,22 @@ const CANVAS_WIDTH = 500;
 const MAX_Y = 10;
 const GAIN = 1;
 
-var FREQS = []; // Choose one frequency per band on water tower, evenly spaced
-
-for (let i=1; i<BINS + 1; i++)
-    FREQS.push(i*SAMPLE_RATE/FFT_SIZE);
-
-const INIT_ENERGY = 100;
-
 export class Visualizer extends Model {
   setup(buffer) {
     this.ticks = 0;
     this.patches.own("energy");
     this.turtles.own("waveNum", "frequency", "power");
     this.numWaves = buffer.length;
-    this.freqs = FREQS;
     this.buffer = buffer;
     this.cmap = ColorMap.Jet;
-    this.diffusionRate = 1;
-    this.dissipationRate = 0.03;
+    this.diffusionRate = 0.8;
+    this.dissipationRate = 0.02;
 
     this.turtles.create(this.buffer.length, t => {
         t.setxy(Math.random() * (this.world.maxX - this.world.minX) + this.world.minX,
             Math.random() * (this.world.maxX - this.world.minX) + this.world.minX);
         t.waveNum = t.id;
-        t.frequency = t.waveNum * SAMPLE_RATE / FFT_SIZE;
+        t.frequency = (t.waveNum + 1) * SAMPLE_RATE / FFT_SIZE;
     });
 
     this.patches.ask(p => {
@@ -57,7 +49,7 @@ export class Visualizer extends Model {
 
   step() {
     this.turtles.ask(t => {
-      t.power = this.buffer[t.waveNum];
+      t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
       t.patch.energy += t.power;
     });
 
@@ -66,7 +58,8 @@ export class Visualizer extends Model {
         p.energy *= 1 - this.dissipationRate;
     });
     
-    this.patches.scaleColors(ColorMap.Jet, "energy", 0, 255);
+    let maxEnergy = 500;
+    this.patches.scaleColors(ColorMap.Jet, "energy", 0, 500);
     this.ticks++;
   }
 }
