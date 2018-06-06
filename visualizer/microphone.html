@@ -9,14 +9,15 @@ LAST MODIFIED: 4 June 2018
 
 <html>
 
-<div id='modeldiv'></div>
+    <div id='modeldiv' style="width:100vw; height:100vh"></div>
 
 <script type='module'>
 
     import { Visualizer } from './visualizer.js'
 
     const BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
-    const viz = new Visualizer(document.body, { minX: 0, maxX: BINS - 1, minY: -10, maxY: 10 });
+    const viz = new Visualizer(document.getElementById('modeldiv'), { minX: -100, maxX: 100, minY: -100, maxY: 100 });
+    window.viz = viz;
 
     // window.onload = function () {
 
@@ -30,11 +31,12 @@ LAST MODIFIED: 4 June 2018
 
     const freqData = new Uint8Array(analyser.frequencyBinCount);
     viz.setup(freqData);
-    viz.start()
+    viz.start();
+
     function renderFrame() {
         requestAnimationFrame(renderFrame);
         analyser.getByteFrequencyData(freqData);
-        //viz.buffer = freqData
+        viz.buffer = freqData;
         viz.step()
     }
 

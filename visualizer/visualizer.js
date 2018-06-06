@@ -27,30 +27,35 @@ export class Visualizer extends Model {
   setup(buffer) {
     this.ticks = 0;
     this.patches.own("energy");
-    this.turtles.own("waveNum", "frequency", "power");
+    this.turtles.own("waveNum", "frequency", "power", "speed");
     this.numWaves = buffer.length;
     this.buffer = buffer;
     this.cmap = ColorMap.Jet;
-    this.diffusionRate = 0.8;
-    this.dissipationRate = 0.02;
+    this.diffusionRate = 1;
+    this.dissipationRate = 0.005;
+    this.speed = 0.3;
 
     this.turtles.create(this.buffer.length, t => {
         t.setxy(Math.random() * (this.world.maxX - this.world.minX) + this.world.minX,
             Math.random() * (this.world.maxX - this.world.minX) + this.world.minX);
         t.waveNum = t.id;
         t.frequency = (t.waveNum + 1) * SAMPLE_RATE / FFT_SIZE;
+        t.color = 0;
     });
 
     this.patches.ask(p => {
         p.energy = 0;
       });
 
+    this.turtles.setDefault('atEdge', 'bounce');
   }
 
   step() {
     this.turtles.ask(t => {
-      t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
+      //t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
+      t.power = this.buffer[t.waveNum] * t.frequency * 10/(16*SAMPLE_RATE/FFT_SIZE);
       t.patch.energy += t.power;
+      t.forward(this.speed);
     });
 
     this.patches.diffuse("energy", this.diffusionRate);
@@ -59,7 +64,7 @@ export class Visualizer extends Model {
     });
     
     let maxEnergy = 500;
-    this.patches.scaleColors(ColorMap.Jet, "energy", 0, 500);
+    this.patches.scaleColors(ColorMap.Jet, "energy", 0, maxEnergy);
     this.ticks++;
   }
 }
