@@ -7,7 +7,8 @@
 import {
   util,
   ColorMap,
-  Model
+  Model,
+  SpriteSheet
 } from 'http://backspaces.github.io/as-app3d/dist/as-app3d.esm.js';
 
 let abs = Math.abs;
@@ -32,13 +33,15 @@ export class Visualizer extends Model {
     this.buffer = buffer;
     this.cmap = ColorMap.Jet;
     this.diffusionRate = 0;
-    this.dissipationRate = 0.5;
+    this.dissipationRate = 0;
     this.speed = 0.3;
-    this.friction = 0.8;
-    this.surfaceTension = 30;
-    this.k = 1 - (0.01 * this.surfaceTension);
+    this.friction = 0.7;
+    this.surfaceTension = 60;
     this.energyLimit = 1000;
-    this.ampScalar = 100000;
+    this.ampScalar = 10000;
+    this.k = 1 - (0.01 * this.surfaceTension);
+    this.totalEnergy = 0;
+    this.goalEnergy = 100;
 
     this.turtles.create(this.buffer.length, t => {
         //this.turtles.create(1, t => {
@@ -60,25 +63,31 @@ export class Visualizer extends Model {
 
   step() {
     this.turtles.ask(t => {
-      t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
-      //t.power = this.buffer[t.waveNum] * t.frequency /(16*SAMPLE_RATE/FFT_SIZE);
-      t.power *= this.ampScalar / 255;
+      //t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
+      t.power = this.buffer[t.waveNum] * t.frequency;
+      t.power *= Math.pow(t.power, 2) * this.ampScalar;
       //t.power = 0;
       t.patch.energy += t.power;
+      //if (t.power !== 0)
+       //     t.power = 0;
       t.forward(this.speed);
+      this.k = 1 - (0.01 * this.surfaceTension);
     });
 
     this.patches.diffuse("energy", this.diffusionRate);
     this.patches.ask(p => {
-        //p.energy *= 1 - this.dissipationRate;
-        
         let neighborEnergy = 0;
 
         for (let i=0; i<p.neighbors.length; i++)
             neighborEnergy += p.neighbors[i].energy;
 
         p.energyVelocity = this.friction * (p.energyVelocity + this.k * (neighborEnergy - p.energy * p.neighbors.length));
+        //p.energyVelocity = (neighborEnergy - p.energy * p.neighbors.length) + p.energyVelocity;
+        //this.totalEnergy += (
     });
+
+    /*for (let i=0; i<this.turtles.length; i++)
+          this.totalEnergy +=*/ 
 
     this.patches.ask(p => {
         p.energy += p.energyVelocity;

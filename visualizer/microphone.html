@@ -1,7 +1,7 @@
 <!--
 FILENAME: microphone.html
 AUTHOR: Hank Wikle
-LAST MODIFIED: 5 June 2018
+LAST MODIFIED: 6 June 2018
 -->
 
 <!DOCTYPE html>
@@ -22,11 +22,11 @@ LAST MODIFIED: 5 June 2018
 
     window.onload = function() {
         var gui = new dat.GUI();
-        gui.add(viz, 'ampScalar');
-        gui.add(viz, 'surfaceTension');
-        gui.add(viz, 'friction');
-        gui.add(viz, 'diffusionRate');
-        gui.add(viz, 'dissipationRate');
+        gui.add(viz, 'ampScalar', 0, 1000000);
+        gui.add(viz, 'surfaceTension', 0, 100);
+        gui.add(viz, 'friction', 0, 1);
+        gui.add(viz, 'diffusionRate', 0, 1);
+        gui.add(viz, 'dissipationRate', 0, 1);
         gui.add(viz, 'energyLimit');
         }
 
@@ -48,7 +48,7 @@ LAST MODIFIED: 5 June 2018
         requestAnimationFrame(renderFrame);
         analyser.getByteFrequencyData(freqData);
         viz.buffer = freqData;
-        viz.step()
+        viz.step();
     }
 
     let handleSuccess = function (stream) {
