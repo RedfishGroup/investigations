@@ -34,23 +34,28 @@ export class Visualizer extends Model {
     this.cmap = ColorMap.Jet;
     this.diffusionRate = 0;
     this.dissipationRate = 0;
-    this.speed = 0.3;
+    this.speed = 0.0;
     this.friction = 0.7;
     this.surfaceTension = 60;
     this.energyLimit = 1000;
-    this.ampScalar = 10000;
+    this.ampScalar = 100;
     this.k = 1 - (0.01 * this.surfaceTension);
     this.totalEnergy = 0;
     this.goalEnergy = 100;
+    this.ticks = 0;
 
     this.turtles.create(this.buffer.length, t => {
         //this.turtles.create(1, t => {
-        t.setxy(Math.random() * (this.world.maxX - this.world.minX) + this.world.minX,
-            Math.random() * (this.world.maxX - this.world.minX) + this.world.minX);
+        t.setxy(t.id/this.buffer.length * (this.world.maxX - this.world.minX) + this.world.minX,
+            t.id/this.buffer.length * (this.world.maxX - this.world.minX) + this.world.minX);
+        //t.setxy(Math.random() * (this.world.maxX - this.world.minX) + this.world.minX,
+        //    Math.random() * (this.world.maxX - this.world.minX) + this.world.minX);
         t.waveNum = t.id;
         //t.setxy((this.world.maxX - this.world.minX) / 16 * t.waveNum, (this.world.maxX - this.world.minX) / 16 * t.waveNum);
         t.frequency = (t.waveNum + 1) * SAMPLE_RATE / FFT_SIZE;
         t.size = 10;
+
+        t.heading=90;
     });
 
     this.patches.ask(p => {
@@ -62,11 +67,13 @@ export class Visualizer extends Model {
   }
 
   step() {
+    this.ticks ++;
     this.turtles.ask(t => {
       //t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
-      t.power = this.buffer[t.waveNum] * t.frequency;
+      t.power = this.buffer[t.waveNum]/255.0 * t.frequency;
       t.power *= Math.pow(t.power, 2) * this.ampScalar;
-      //t.power = 0;
+      //t.power *= Math.sin(this.ticks/10.0);
+      t.size = 10*this.buffer[t.waveNum]/255.0 + 5;
       t.patch.energy += t.power;
       //if (t.power !== 0)
        //     t.power = 0;

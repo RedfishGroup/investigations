@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "@redfish/as-app3d": "github:backspaces/as-app3d.git"
+    "@redfish/as-app3d": "github:backspaces/as-app3d.git",
+    "dat.gui": "^0.7.2"
   }
 }

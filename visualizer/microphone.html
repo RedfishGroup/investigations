@@ -22,13 +22,17 @@ LAST MODIFIED: 6 June 2018
 
     window.onload = function() {
         var gui = new dat.GUI();
-        gui.add(viz, 'ampScalar', 0, 1000000);
+        gui.add(viz, 'ampScalar', 0, 10000);
         gui.add(viz, 'surfaceTension', 0, 100);
         gui.add(viz, 'friction', 0, 1);
         gui.add(viz, 'diffusionRate', 0, 1);
         gui.add(viz, 'dissipationRate', 0, 1);
         gui.add(viz, 'energyLimit');
+
+        gui.remember(viz);
+
         }
+
 
     // window.onload = function () {
 
