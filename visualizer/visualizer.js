@@ -1,35 +1,34 @@
 /* FILENAME: visualizer.js
  * AUTHOR: Hank Wikle
- * LAST MODIFIED: 4 June 2018
+ * LAST MODIFIED: 5 June 2018
  * DESCRIPTION: Live audio visualizer for Ozomatli performance at Interplanetary Festival 06/07/2018
 */
-
-// How do I include this code in my html file?
 
 import {
   util,
   ColorMap,
   Model
-} from "../node_modules/@redfish/as-app3d/docs/dist/as-app3d.esm.js";
+} from "https://unpkg.com/@redfish/as-app3d?module";
 
 let abs = Math.abs;
 let sin = Math.sin;
 let max = Math.max;
 
+const BINS = 16;
 const SAMPLE_RATE = 44100;
-//const FFT_SIZE = 2*BINS;
+const FFT_SIZE = 2*BINS;
 const NUM_WAVES = 10;
 const CANVAS_HEIGHT = 100;
 const CANVAS_WIDTH = 500;
+const MAX_Y = 10;
+const GAIN = 1;
 
-//var FREQS = []; // Choose one frequency per band on water tower, evenly spaced
+var FREQS = []; // Choose one frequency per band on water tower, evenly spaced
 
-//for (let i=0; i<BINS; i++)
-//    FREQS.push(i*SAMPLE_RATE/FFT_SIZE);
+for (let i=1; i<BINS + 1; i++)
+    FREQS.push(i*SAMPLE_RATE/FFT_SIZE);
 
 const INIT_ENERGY = 100;
-const DIFFUSION_AMT = 0.5;
-const MAX_Y = CANVAS_HEIGHT / 2;
 
 export class Visualizer extends Model {
   setup(buffer) {
@@ -38,9 +37,10 @@ export class Visualizer extends Model {
     this.patches.own("energy");
     this.nodes.own("phase restY waveNum");
     this.numWaves = buffer.length;
-    //this.freqs = freqs;
+    this.freqs = FREQS;
     this.buffer = buffer;
     this.cmap = ColorMap.Jet;
+    //this.cmap = "red";
 
     this.patches.ask(p => {
       if (abs(p.y) < MAX_Y && p.y % this.numWaves === 0) {
@@ -59,31 +59,18 @@ export class Visualizer extends Model {
   }
 
   step() {
-    /*this.nodes.ask(n => {
+    this.nodes.ask(n => {
       n.energy += n.y - n.restY;
       n.energy = Math.random() * 300;
       n.y = n.restY + this.buffer[n.waveNum] * sin(this.ticks + n.phase); // Correct use of this?
-    });*/
-
-    this.patches.forEach(p => {
-      p.energy = Math.floor(this.buffer[p.x] / 10) * 10;
-      p.energy = p.energy / (Math.abs(p.y / 4) + 1);
     });
 
-    //this.patches.diffuse("energy", DIFFUSION_AMT);
+    this.patches.forEach(p => {
+        p.energy = 10 * Math.floor(this.buffer[Math.abs(p.x)] / 10);
+    });
 
-    let s = "";
-    for (let i = 0; i < this.buffer.length; i++) s = s + `${this.buffer[i]} `;
-    //console.log(s);
-
-    //let maxEnergy = max(...patches.energy);
     let maxEnergy = 300;
-    //if (Math.random() > 0.9) {
-    //this.patches.forEach(p => {
-    this.patches.scaleColors(this.cmap, "energy", 0, maxEnergy);
-    //p.color = scaleColor("red", p.energy, -1 * maxEnergy, maxEnergy);
-    //});
-    //}
+    this.patches.scaleColors(ColorMap.Jet, "energy", 0, maxEnergy);
     this.ticks++; // ++ in JS?
   }
 }
