@@ -33,45 +33,41 @@ const INIT_ENERGY = 100;
 export class Visualizer extends Model {
   setup(buffer) {
     this.ticks = 0;
-    this.patchBreeds("nodes");
     this.patches.own("energy");
-    this.nodes.own("phase restY waveNum");
+    this.turtles.own("waveNum", "frequency", "power");
     this.numWaves = buffer.length;
     this.freqs = FREQS;
     this.buffer = buffer;
     this.cmap = ColorMap.Jet;
-    //this.cmap = "red";
+    this.diffusionRate = 1;
+    this.dissipationRate = 0.03;
+
+    this.turtles.create(this.buffer.length, t => {
+        t.setxy(Math.random() * (this.world.maxX - this.world.minX) + this.world.minX,
+            Math.random() * (this.world.maxX - this.world.minX) + this.world.minX);
+        t.waveNum = t.id;
+        t.frequency = t.waveNum * SAMPLE_RATE / FFT_SIZE;
+    });
 
     this.patches.ask(p => {
-      if (abs(p.y) < MAX_Y && p.y % this.numWaves === 0) {
-        p.sprout(1, this.nodes, n => {
-          n.restY = n.y;
-          n.waveNum = n.y / this.numWaves;
-        });
-        p.energy = util.randomInt(INIT_ENERGY) - INIT_ENERGY / 2; // Guessed at this function
-      }
-    });
-    this.nodes.ask(n => {
-      n.phase = n.x; //* freqs[n.waveNum];
-      n.hide(); //ht - hide turtle
-      // ask patch at -1 0 [ask one-of turtles-here [create-link-with aNode (self)]]
-    });
+        p.energy = 0;
+      });
+
   }
 
   step() {
-    this.nodes.ask(n => {
-      n.energy += n.y - n.restY;
-      n.energy = Math.random() * 300;
-      n.y = n.restY + this.buffer[n.waveNum] * sin(this.ticks + n.phase); // Correct use of this?
+    this.turtles.ask(t => {
+      t.power = this.buffer[t.waveNum];
+      t.patch.energy += t.power;
     });
 
-    this.patches.forEach(p => {
-        p.energy = 10 * Math.floor(this.buffer[Math.abs(p.x)] / 10);
+    this.patches.diffuse("energy", this.diffusionRate);
+    this.patches.ask(p => {
+        p.energy *= 1 - this.dissipationRate;
     });
-
-    let maxEnergy = 300;
-    this.patches.scaleColors(ColorMap.Jet, "energy", 0, maxEnergy);
-    this.ticks++; // ++ in JS?
+    
+    this.patches.scaleColors(ColorMap.Jet, "energy", 0, 255);
+    this.ticks++;
   }
 }
 
