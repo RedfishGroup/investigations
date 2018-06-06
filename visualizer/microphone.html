@@ -1,7 +1,7 @@
 <!--
 FILENAME: microphone.html
 AUTHOR: Hank Wikle
-LAST MODIFIED: 4 June 2018
+LAST MODIFIED: 5 June 2018
 -->
 
 <!DOCTYPE html>
@@ -13,11 +13,20 @@ LAST MODIFIED: 4 June 2018
 
 <script type='module'>
 
-    import { Visualizer } from './visualizer.js'
+    import { Visualizer } from './visualizer.js';
+    import * as dat from './node_modules/dat.gui/build/dat.gui.module.js';
 
     const BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
     const viz = new Visualizer(document.getElementById('modeldiv'), { minX: -100, maxX: 100, minY: -100, maxY: 100 });
     window.viz = viz;
+
+    window.onload = function() {
+        gui = new dat.GUI();
+        gui.add(viz, 'surfaceTension');
+        gui.add(viz, 'friction');
+        gui.add(viz, 'diffusionRate');
+        gui.add(viz, 'dissipationRate');
+        }
 
     // window.onload = function () {
 

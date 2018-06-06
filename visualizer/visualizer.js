@@ -34,17 +34,19 @@ export class Visualizer extends Model {
     this.diffusionRate = 0;
     this.dissipationRate = 0;
     this.speed = 0.3;
-    this.friction = 0.3;
-    this.surfaceTension = 30;
+    this.friction = 0.7;
+    this.surfaceTension = 50;
     this.k = 1 - (0.01 * this.surfaceTension);
-    this.energyLimit = 10000;
+    this.energyLimit = 100;
 
-    this.turtles.create(this.buffer.length, t => {
-        t.setxy(Math.random() * (this.world.maxX - this.world.minX) + this.world.minX,
-            Math.random() * (this.world.maxX - this.world.minX) + this.world.minX);
+    //this.turtles.create(this.buffer.length, t => {
+        this.turtles.create(1, t => {
+        //t.setxy(Math.random() * (this.world.maxX - this.world.minX) + this.world.minX,
+           // Math.random() * (this.world.maxX - this.world.minX) + this.world.minX);
         t.waveNum = t.id;
+        t.setxy((this.world.maxX - this.world.minX) / 16 * t.waveNum, (this.world.maxX - this.world.minX) / 16 * t.waveNum);
         t.frequency = (t.waveNum + 1) * SAMPLE_RATE / FFT_SIZE;
-        t.color = 0;
+        t.size = 10;
     });
 
     this.patches.ask(p => {
@@ -59,33 +61,36 @@ export class Visualizer extends Model {
     this.turtles.ask(t => {
       //t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
       t.power = this.buffer[t.waveNum] * t.frequency /(16*SAMPLE_RATE/FFT_SIZE);
-      t.power /= 2550;
+      t.power /= 255;
       //t.power = 0;
       t.patch.energy += t.power;
-      t.forward(this.speed);
+      //t.forward(this.speed);
     });
 
     this.patches.diffuse("energy", this.diffusionRate);
     this.patches.ask(p => {
-        p.energy *= 1 - this.dissipationRate;
+        //p.energy *= 1 - this.dissipationRate;
         
         let neighborEnergy = 0;
+
         for (let i=0; i<p.neighbors.length; i++)
             neighborEnergy += p.neighbors[i].energy;
 
         p.energyVelocity = this.friction * (p.energyVelocity + this.k * (neighborEnergy - p.energy * p.neighbors.length));
-        p.energy += p.energyVelocity;
-        
-        if (p.energy > this.energyLimit)
-            p.energy = this.energyLimit;
-        else if (p.energy < 0)
-            p.energy = 0;
+    });
 
-        //console.log(p.energy);
+    this.patches.ask(p => {
+        p.energy += p.energyVelocity;
+
+        if (Math.abs(p.energy) > this.energyLimit) {
+            if (p.energy > 0)
+                p.energy = this.energyLimit;
+            else
+                p.energy = -1 * this.energyLimit;
+        }
     });
     
-    this.patches.scaleColors(ColorMap.Jet, "energy", 0, this.energyLimit);
-    this.ticks++;
+    this.patches.scaleColors(ColorMap.Jet, "energy", -1 * this.energyLimit, this.energyLimit);
   }
 }
 
