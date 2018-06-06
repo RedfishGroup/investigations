@@ -8,7 +8,7 @@ import {
   util,
   ColorMap,
   Model
-} from "https://unpkg.com/@redfish/as-app3d?module";
+} from 'http://backspaces.github.io/as-app3d/dist/as-app3d.esm.js';
 
 let abs = Math.abs;
 let sin = Math.sin;
@@ -32,19 +32,20 @@ export class Visualizer extends Model {
     this.buffer = buffer;
     this.cmap = ColorMap.Jet;
     this.diffusionRate = 0;
-    this.dissipationRate = 0;
+    this.dissipationRate = 0.5;
     this.speed = 0.3;
-    this.friction = 0.7;
-    this.surfaceTension = 50;
+    this.friction = 0.8;
+    this.surfaceTension = 30;
     this.k = 1 - (0.01 * this.surfaceTension);
-    this.energyLimit = 100;
+    this.energyLimit = 1000;
+    this.ampScalar = 100000;
 
-    //this.turtles.create(this.buffer.length, t => {
-        this.turtles.create(1, t => {
-        //t.setxy(Math.random() * (this.world.maxX - this.world.minX) + this.world.minX,
-           // Math.random() * (this.world.maxX - this.world.minX) + this.world.minX);
+    this.turtles.create(this.buffer.length, t => {
+        //this.turtles.create(1, t => {
+        t.setxy(Math.random() * (this.world.maxX - this.world.minX) + this.world.minX,
+            Math.random() * (this.world.maxX - this.world.minX) + this.world.minX);
         t.waveNum = t.id;
-        t.setxy((this.world.maxX - this.world.minX) / 16 * t.waveNum, (this.world.maxX - this.world.minX) / 16 * t.waveNum);
+        //t.setxy((this.world.maxX - this.world.minX) / 16 * t.waveNum, (this.world.maxX - this.world.minX) / 16 * t.waveNum);
         t.frequency = (t.waveNum + 1) * SAMPLE_RATE / FFT_SIZE;
         t.size = 10;
     });
@@ -59,12 +60,12 @@ export class Visualizer extends Model {
 
   step() {
     this.turtles.ask(t => {
-      //t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
-      t.power = this.buffer[t.waveNum] * t.frequency /(16*SAMPLE_RATE/FFT_SIZE);
-      t.power /= 255;
+      t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
+      //t.power = this.buffer[t.waveNum] * t.frequency /(16*SAMPLE_RATE/FFT_SIZE);
+      t.power *= this.ampScalar / 255;
       //t.power = 0;
       t.patch.energy += t.power;
-      //t.forward(this.speed);
+      t.forward(this.speed);
     });
 
     this.patches.diffuse("energy", this.diffusionRate);
@@ -81,6 +82,7 @@ export class Visualizer extends Model {
 
     this.patches.ask(p => {
         p.energy += p.energyVelocity;
+        p.energy *= (1 - this.dissipationRate);
 
         if (Math.abs(p.energy) > this.energyLimit) {
             if (p.energy > 0)
@@ -90,7 +92,7 @@ export class Visualizer extends Model {
         }
     });
     
-    this.patches.scaleColors(ColorMap.Jet, "energy", -1 * this.energyLimit, this.energyLimit);
+    this.patches.scaleColors(this.cmap, "energy", -1 * this.energyLimit, this.energyLimit);
   }
 }
 

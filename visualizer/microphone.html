@@ -17,15 +17,17 @@ LAST MODIFIED: 5 June 2018
     import * as dat from './node_modules/dat.gui/build/dat.gui.module.js';
 
     const BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
-    const viz = new Visualizer(document.getElementById('modeldiv'), { minX: -100, maxX: 100, minY: -100, maxY: 100 });
+    const viz = new Visualizer(document.getElementById('modeldiv'), { minX: -150, maxX: 150, minY: -150, maxY: 150 });
     window.viz = viz;
 
     window.onload = function() {
-        gui = new dat.GUI();
+        var gui = new dat.GUI();
+        gui.add(viz, 'ampScalar');
         gui.add(viz, 'surfaceTension');
         gui.add(viz, 'friction');
         gui.add(viz, 'diffusionRate');
         gui.add(viz, 'dissipationRate');
+        gui.add(viz, 'energyLimit');
         }
 
     // window.onload = function () {
