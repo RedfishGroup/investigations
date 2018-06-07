@@ -32,3 +32,7 @@ railyard.html:
 
 * The z value for the turtles is their id, i.e. one patch increase in z
   as the turtles are laid out. Could be too much parallax.
+
+====
+
+Stephen fixed the pngs, now all fine.
