@@ -64,6 +64,7 @@ export class Visualizer extends Model {
     this.ticks = 0;
     this.sinTick = 0.1;
     this.showTurtles = true;
+    this.randomNoise = 1;
 
     this.turtles.create(this.buffer.length, t => {
       //this.turtles.create(1, t => {
@@ -135,6 +136,8 @@ export class Visualizer extends Model {
 
     this.patches.ask(p => {
       p.energy += p.energyVelocity;
+      if (this.randomNoise > 0)
+        p.energy += (Math.random() / 2 - 0.5) * this.randomNoise;
       p.energy *= 1 - this.dissipationRate;
 
       if (Math.abs(p.energy) > this.energyLimit) {
