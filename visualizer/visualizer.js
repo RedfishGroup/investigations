@@ -1,6 +1,6 @@
 /* FILENAME: visualizer.js
  * AUTHOR: Hank Wikle
- * LAST MODIFIED: 6 June 2018
+ * LAST MODIFIED: 7 June 2018
  * DESCRIPTION: Live audio visualizer for Ozomatli performance at Interplanetary Festival 06/07/2018
 */
 
