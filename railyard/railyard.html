@@ -55,6 +55,7 @@
         class Hello extends Model {
 
             async startup() {
+                this.currentSprite = 0;
                 let path, larger
                 for ([path, larger] of paths) {
                     const img = await util.imagePromise(path)
@@ -64,20 +65,20 @@
             }
 
             setup() {
-                this.patches.ask(p => {
+                /*this.patches.ask(p => {
                     // p.color = ColorMap.DarkGray.randomColor()
                     // If we don't set color, patches are transparent.
-                })
+                })*/
 
-                this.turtles.setDefault('atEdge', 'bounce')
+                //this.turtles.setDefault('atEdge', 'bounce')
 
-                this.turtles.create(sprites.length, t => {
-                    const patch = this.patches.oneOf()
-                    t.setxy(patch.x, patch.y)
+                this.turtles.create(1, t => {
+                    //const patch = this.patches.oneOf()
+                    t.setxy(this.world.minX, (this.world.maxY - this.world.minY) / 2)
                     t.theta = 0
-                    t.setSprite(sprites[t.id][0])
+                    t.setSprite(sprites[this.currentSprite][0])
                 })
-                this.layout()
+                //this.layout()
 
 
                 // this.turtles.ask(t => {
@@ -92,7 +93,7 @@
                 const size = width / (cols + 2)
                 console.log(cols, rows, size)
                 console.log(minXcor, maxYcor, width)
-                this.turtles.ask((t, i) => {
+                /* this.turtles.ask((t, i) => {
                     const col = t.id % cols
                     const row = Math.floor(t.id / cols)
                     const x = minXcor + size * (col + 1.5)
@@ -100,23 +101,32 @@
                     console.log(col, row, x, y)
                     t.size = size * 0.8 * sprites[t.id][1]
                     // const col = t.id /
-                    t.setxy(x, y, t.id)
-                })
+                    t.setxy(x, y, t.id) */
+                //})
             }
 
             step() { // do animation here.
-                // this.turtles.ask(t => {
-                //     t.direction += util.randomCentered(0.1)
-                //     t.forward(0.1)
-                // })
+                 this.turtles.ask(t => {
+                     t.direction += util.randomCentered(0.1)
+                     t.x += 1;
+                     if (t.x > this.world.maxX) {
+                         t.x = 0;
+                         if(this.currentSprite === sprites.length - 1)
+                             this.currentSprite = 0;
+                         else
+                             this.currentSprite++;
+                     }
+                     t.setSprite(sprites[this.currentSprite][0]);
+                     t.size = 0.8 * sprites[this.currentSprite][1];
+                 })
             }
         }
 
         const options = Model.defaultWorld(100)
         const renderer = Model.defaultRenderer()
         renderer.spriteSize = 1024
-        renderer.useAxes = false
-        renderer.useGrid = false
+        renderer.useAxes = true 
+        renderer.useGrid = true 
         const model = new Hello(document.body, options, renderer)
 
         model.startup().then(() => {
