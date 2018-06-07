@@ -51,18 +51,18 @@ export class Visualizer extends Model {
       [127, 0, 0],
     ]);
 
-    this.diffusionRate = 0;
-    this.dissipationRate = 0;
+    this.diffusionRate = 0.01;
+    this.dissipationRate = 0.01;
     this.speed = 0.0;
-    this.friction = 0.7;
-    this.surfaceTension = 60;
+    this.friction = 0.99;
+    this.surfaceTension = 70;
     this.energyLimit = 1000;
     this.ampScalar = 100;
     this.k = 1 - 0.01 * this.surfaceTension;
     this.totalEnergy = 0;
     this.goalEnergy = 100;
     this.ticks = 0;
-    this.sinTick = 1;
+    this.sinTick = 0.1;
     this.showTurtles = true;
 
     this.turtles.create(this.buffer.length, t => {
@@ -91,6 +91,12 @@ export class Visualizer extends Model {
     });
 
     this.turtles.setDefault('atEdge', 'bounce');
+  }
+
+  randomHeadings() {
+    this.turtles.ask(t => {
+      t.heading = Math.random() * 360;
+    });
   }
 
   step() {
