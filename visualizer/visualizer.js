@@ -8,7 +8,7 @@ import {
   util,
   ColorMap,
   Model,
-  SpriteSheet
+  SpriteSheet,
 } from 'http://backspaces.github.io/as-app3d/dist/as-app3d.esm.js';
 
 let abs = Math.abs;
@@ -17,7 +17,7 @@ let max = Math.max;
 
 const BINS = 16;
 const SAMPLE_RATE = 44100;
-const FFT_SIZE = 2*BINS;
+const FFT_SIZE = 2 * BINS;
 const NUM_WAVES = 10;
 const CANVAS_HEIGHT = 100;
 const CANVAS_WIDTH = 500;
@@ -25,10 +25,12 @@ const MAX_Y = 10;
 const GAIN = 1;
 
 export class Visualizer extends Model {
+  async startup() {}
+
   setup(buffer) {
     this.ticks = 0;
-    this.patches.own("energy", "energyVelocity");
-    this.turtles.own("waveNum", "frequency", "power", "speed");
+    this.patches.own('energy', 'energyVelocity');
+    this.turtles.own('waveNum', 'frequency', 'power', 'speed');
     this.numWaves = buffer.length;
     this.buffer = buffer;
     this.cmap = ColorMap.Jet;
@@ -39,76 +41,88 @@ export class Visualizer extends Model {
     this.surfaceTension = 60;
     this.energyLimit = 1000;
     this.ampScalar = 100;
-    this.k = 1 - (0.01 * this.surfaceTension);
+    this.k = 1 - 0.01 * this.surfaceTension;
     this.totalEnergy = 0;
     this.goalEnergy = 100;
     this.ticks = 0;
+    this.sinTick = 1;
 
     this.turtles.create(this.buffer.length, t => {
-        //this.turtles.create(1, t => {
-        t.setxy(t.id/this.buffer.length * (this.world.maxX - this.world.minX) + this.world.minX,
-            t.id/this.buffer.length * (this.world.maxX - this.world.minX) + this.world.minX);
-        //t.setxy(Math.random() * (this.world.maxX - this.world.minX) + this.world.minX,
-        //    Math.random() * (this.world.maxX - this.world.minX) + this.world.minX);
-        t.waveNum = t.id;
-        //t.setxy((this.world.maxX - this.world.minX) / 16 * t.waveNum, (this.world.maxX - this.world.minX) / 16 * t.waveNum);
-        t.frequency = (t.waveNum + 1) * SAMPLE_RATE / FFT_SIZE;
-        t.size = 10;
+      //this.turtles.create(1, t => {
+      t.setxy(
+        (t.id / this.buffer.length) * (this.world.maxX - this.world.minX) +
+          this.world.minX,
+        (t.id / this.buffer.length) * (this.world.maxX - this.world.minX) +
+          this.world.minX
+      );
+      //t.setxy(Math.random() * (this.world.maxX - this.world.minX) + this.world.minX,
+      //    Math.random() * (this.world.maxX - this.world.minX) + this.world.minX);
+      t.waveNum = t.id;
+      //t.setxy((this.world.maxX - this.world.minX) / 16 * t.waveNum, (this.world.maxX - this.world.minX) / 16 * t.waveNum);
+      t.frequency = ((t.waveNum + 1) * SAMPLE_RATE) / FFT_SIZE;
+      t.size = 10;
 
-        t.heading=90;
+      t.heading = 90;
     });
 
     this.patches.ask(p => {
-        p.energy = 0;
-        p.energyVelocity = 0;
-      });
+      p.energy = 0;
+      p.energyVelocity = 0;
+    });
 
     this.turtles.setDefault('atEdge', 'bounce');
   }
 
   step() {
-    this.ticks ++;
+    this.ticks++;
     this.turtles.ask(t => {
       //t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
-      t.power = this.buffer[t.waveNum]/255.0 * t.frequency;
+      t.power = (this.buffer[t.waveNum] / 255.0) * t.frequency;
       t.power *= Math.pow(t.power, 2) * this.ampScalar;
-      //t.power *= Math.sin(this.ticks/10.0);
-      t.size = 10*this.buffer[t.waveNum]/255.0 + 5;
+      t.power *= Math.cos(this.ticks * this.sinTick);
+      t.size = (10 * this.buffer[t.waveNum]) / 255.0 + 5;
       t.patch.energy += t.power;
       //if (t.power !== 0)
-       //     t.power = 0;
+      //     t.power = 0;
       t.forward(this.speed);
-      this.k = 1 - (0.01 * this.surfaceTension);
     });
 
-    this.patches.diffuse("energy", this.diffusionRate);
+    this.k = 1 - 0.01 * this.surfaceTension;
+
+    this.patches.diffuse('energy', this.diffusionRate);
     this.patches.ask(p => {
-        let neighborEnergy = 0;
+      let neighborEnergy = 0;
 
-        for (let i=0; i<p.neighbors.length; i++)
-            neighborEnergy += p.neighbors[i].energy;
+      for (let i = 0; i < p.neighbors.length; i++)
+        neighborEnergy += p.neighbors[i].energy;
 
-        p.energyVelocity = this.friction * (p.energyVelocity + this.k * (neighborEnergy - p.energy * p.neighbors.length));
-        //p.energyVelocity = (neighborEnergy - p.energy * p.neighbors.length) + p.energyVelocity;
-        //this.totalEnergy += (
+      p.energyVelocity =
+        this.friction *
+        (p.energyVelocity +
+          this.k * (neighborEnergy - p.energy * p.neighbors.length));
+      //p.energyVelocity = (neighborEnergy - p.energy * p.neighbors.length) + p.energyVelocity;
+      //this.totalEnergy += (
     });
 
     /*for (let i=0; i<this.turtles.length; i++)
-          this.totalEnergy +=*/ 
+          this.totalEnergy +=*/
 
     this.patches.ask(p => {
-        p.energy += p.energyVelocity;
-        p.energy *= (1 - this.dissipationRate);
+      p.energy += p.energyVelocity;
+      p.energy *= 1 - this.dissipationRate;
 
-        if (Math.abs(p.energy) > this.energyLimit) {
-            if (p.energy > 0)
-                p.energy = this.energyLimit;
-            else
-                p.energy = -1 * this.energyLimit;
-        }
+      if (Math.abs(p.energy) > this.energyLimit) {
+        if (p.energy > 0) p.energy = this.energyLimit;
+        else p.energy = -1 * this.energyLimit;
+      }
     });
-    
-    this.patches.scaleColors(this.cmap, "energy", -1 * this.energyLimit, this.energyLimit);
+
+    this.patches.scaleColors(
+      this.cmap,
+      'energy',
+      -1 * this.energyLimit,
+      this.energyLimit
+    );
   }
 }
 

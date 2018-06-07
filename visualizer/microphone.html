@@ -8,62 +8,80 @@ LAST MODIFIED: 6 June 2018
 <meta charset="UTF-8">
 
 <html>
+<style>
+    body {
+        background-color: black;
+        margin: 0px;
+    }
+</style>
+
+<head>
+
+</head>
+
+<body>
 
     <div id='modeldiv' style="width:100vw; height:100vh"></div>
 
-<script type='module'>
+    <script type='module'>
+        import { Visualizer } from './visualizer.js';
+        import * as dat from './node_modules/dat.gui/build/dat.gui.module.js';
 
-    import { Visualizer } from './visualizer.js';
-    import * as dat from './node_modules/dat.gui/build/dat.gui.module.js';
+        const BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
+        const viz = new Visualizer(document.getElementById('modeldiv'), { minX: -150, maxX: 150, minY: -150, maxY: 150 });
+        window.viz = viz;
 
-    const BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
-    const viz = new Visualizer(document.getElementById('modeldiv'), { minX: -150, maxX: 150, minY: -150, maxY: 150 });
-    window.viz = viz;
+        const { patches, turtles, links, spriteSheet } = viz
+        util.toWindow({ patches, turtles, links, spriteSheet, model: viz })
 
-    window.onload = function() {
-        var gui = new dat.GUI();
-        gui.add(viz, 'ampScalar', 0, 10000);
-        gui.add(viz, 'surfaceTension', 0, 100);
-        gui.add(viz, 'friction', 0, 1);
-        gui.add(viz, 'diffusionRate', 0, 1);
-        gui.add(viz, 'dissipationRate', 0, 1);
-        gui.add(viz, 'energyLimit');
+        window.onload = function () {
+            var gui = new dat.GUI();
+            gui.remember(viz);
 
-        gui.remember(viz);
+            gui.add(viz, 'ampScalar', 0, 10000);
+            gui.add(viz, 'surfaceTension', 0, 100);
+            gui.add(viz, 'friction', 0.0, 1.0, 0.0001);
+            gui.add(viz, 'diffusionRate', 0.0, 1.0, 0.0001);
+            gui.add(viz, 'dissipationRate', 0.0, 1.0, 0.001);
+            gui.add(viz, 'energyLimit');
+            gui.add(viz, 'speed', 0.0, 10.0, 0.01)
+            gui.add(viz, 'sinTick', 0.0, 1.0, 0.001)
+
 
         }
 
 
-    // window.onload = function () {
+        // window.onload = function () {
 
-    // Set up audio context
+        // Set up audio context
 
-    const ctx = new AudioContext();
-    const constraints = { audio: true };
-    var source;
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 2 * BINS;
+        const ctx = new AudioContext();
+        const constraints = { audio: true };
+        var source;
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 2 * BINS;
 
-    const freqData = new Uint8Array(analyser.frequencyBinCount);
-    viz.setup(freqData);
-    viz.start();
+        const freqData = new Uint8Array(analyser.frequencyBinCount);
+        viz.setup(freqData);
+        viz.start();
 
-    function renderFrame() {
-        requestAnimationFrame(renderFrame);
-        analyser.getByteFrequencyData(freqData);
-        viz.buffer = freqData;
-        viz.step();
-    }
+        function renderFrame() {
+            requestAnimationFrame(renderFrame);
+            analyser.getByteFrequencyData(freqData);
+            viz.buffer = freqData;
+            viz.step();
+        }
 
-    let handleSuccess = function (stream) {
-        source = ctx.createMediaStreamSource(stream);
-        source.connect(analyser);
-        renderFrame();
-    };
+        let handleSuccess = function (stream) {
+            source = ctx.createMediaStreamSource(stream);
+            source.connect(analyser);
+            renderFrame();
+        };
 
-    navigator.mediaDevices.getUserMedia(constraints)
-        .then(handleSuccess);
+        navigator.mediaDevices.getUserMedia(constraints)
+            .then(handleSuccess);
    //  }
-</script>
+    </script>
+</body>
 
 </html>
