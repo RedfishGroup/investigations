@@ -1,0 +1,133 @@
+<html>
+
+<head>
+    <title>RailYard</title>
+    <script src="https://unpkg.com/three@0.89.0"></script>
+    <script src="https://unpkg.com/three@0.89.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Must be loaded after all dependencies, THREE & OrbitControlls -->
+    <script src="https://backspaces.github.io/as-app3d/dist/as-app3d.umd.js"></script>
+    <!-- <script src="../as-app3d/dist/as-app3d.umd.js"></script> -->
+    <style>
+        body {
+            margin: 0px;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        const { ColorMap, Model, SpriteSheet, util } = ASapp3d
+        // run bash mklist.sh to make the paths list
+        const paths = [
+            './pngs/Alibi.png',
+            './pngs/Amd.png',
+            './pngs/Axle.png',
+            './pngs/Biocultura.png',
+            './pngs/Currents.png',
+            './pngs/FormAndConcept.png',
+            './pngs/Heliotown.png',
+            './pngs/HotelSantaFe.png',
+            './pngs/IAIA.png',
+            './pngs/JCC.png',
+            './pngs/LaserTalks.png',
+            './pngs/MakeSantaFe.png',
+            './pngs/MeowWolf.png',
+            './pngs/PasaTiempo.png',
+            './pngs/RailyardArtsDistrict.png',
+            './pngs/RailyardParkConservancy.png',
+            './pngs/SFArtsCommission.png',
+            './pngs/SFCC.png',
+            './pngs/SFChildrensMuseum.png',
+            './pngs/SFFarmersMarket.png',
+            './pngs/SFI.png',
+            './pngs/SFR.png',
+            './pngs/SiteSantaFe.png',
+            './pngs/ThomaFoundation.png',
+            './pngs/UnitedTherapeutics.png',
+            './pngs/VioletCrown.png',
+        ]
+        const sprites = []
+
+        class Hello extends Model {
+
+            async startup() {
+                for (const path of paths) {
+                    const img = await util.imagePromise(path)
+                    const sprite = this.spriteSheet.newSprite(img, 'black')
+                    sprites.push(sprite)
+                }
+            }
+
+            setup() {
+                this.patches.ask(p => {
+                    p.color = ColorMap.DarkGray.randomColor()
+                    // If we don't set color, patches are transparent.
+                })
+
+                this.turtles.setDefault('atEdge', 'bounce')
+
+                this.turtles.create(sprites.length, t => {
+                    const patch = this.patches.oneOf()
+                    t.setxy(patch.x, patch.y)
+                    t.theta = 0
+                    t.setSprite(sprites[t.id])
+                })
+                this.layout()
+
+
+                // this.turtles.ask(t => {
+                //     this.links.create(t, this.turtles.otherOneOf(t))
+                //     // If we don't set color, a random color will be used
+                // })
+            }
+            layout() {
+                const {minXcor, maxYcor, width} = this.world
+                const cols = Math.ceil(Math.sqrt(sprites.length))
+                const rows = Math.ceil(sprites.length/cols)
+                const size = this.world.width / (cols + 2)
+                console.log(cols, rows, size)
+                console.log(minXcor, maxYcor, width)
+                this.turtles.ask((t, i) => {
+                    const col = t.id % cols
+                    const row = Math.floor(t.id / cols)
+                    const x = minXcor + size * (col + 1.5)
+                    const y = maxYcor - size * (row + 1.5)
+                    console.log(col, row, x, y)
+                   t.size = size * 0.8
+                    // const col = t.id /
+                    t.setxy(x, y, t.id)
+                })
+            }
+
+            step() { // do animation here.
+                // this.turtles.ask(t => {
+                //     t.direction += util.randomCentered(0.1)
+                //     t.forward(0.1)
+                // })
+            }
+        }
+
+        const options = Model.defaultWorld(100)
+        const renderer = Model.defaultRenderer()
+        renderer.spriteSize = 1024
+        renderer.useAxes = false
+        renderer.useGrid = false
+        const model = new Hello(document.body, options, renderer)
+
+        model.startup().then(() => {
+            console.log('startup done', Object.keys(model.spriteSheet.sprites))
+            model.setup()
+            model.start()
+
+            // Debugging
+            const { patches, turtles, links, spriteSheet } = model
+            util.toWindow({ patches, turtles, links, spriteSheet, model })
+            console.log('ready', Object.keys(model.spriteSheet.sprites))
+        })
+
+        // cut/paste to console to see the sprites:
+        // document.body.appendChild(spriteSheet.ctx.canvas)
+    </script>
+</body>
+
+</html>
