@@ -131,7 +131,11 @@
 
         // cut/paste to console to see the sprites:
         // document.body.appendChild(spriteSheet.ctx.canvas)
-    </script>
+        document.onkeypress = function (oPEvt) {
+            var oEvent = oPEvt || window.event, nChr = oEvent.charCode, sNodeType = oEvent.target.nodeName.toUpperCase();
+            console.log(oPEvt);
+            return true;
+        };    </script>
 </body>
 
 </html>

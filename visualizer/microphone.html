@@ -48,14 +48,16 @@ LAST MODIFIED: 6 June 2018
             var gui = new dat.GUI();
             gui.remember(viz);
 
-            gui.add(viz, 'ampScalar', 0, 10000);
+            gui.add(viz, 'showTurtles', true)
+            gui.add(viz, 'ampScalar', 0, 100.0, 0.1);
             gui.add(viz, 'surfaceTension', 0, 100);
             gui.add(viz, 'friction', 0.0, 1.0, 0.0001);
             gui.add(viz, 'diffusionRate', 0.0, 1.0, 0.0001);
-            gui.add(viz, 'dissipationRate', 0.0, 1.0, 0.001);
-            gui.add(viz, 'energyLimit');
-            gui.add(viz, 'speed', 0.0, 10.0, 0.01)
+            gui.add(viz, 'dissipationRate', 0.0, 0.1, 0.001);
+            gui.add(viz, 'energyLimit', 0, 10000, 1);
+            gui.add(viz, 'speed', 0.0, 10.0, 0.0001)
             gui.add(viz, 'sinTick', 0.0, 1.0, 0.001)
+
 
             const position = gui.addFolder('position')
             position.add(viz.view.camera.position, 'x', -500, 500, 0.1).listen()

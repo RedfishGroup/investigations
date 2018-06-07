@@ -35,7 +35,22 @@ export class Visualizer extends Model {
     this.turtles.own('waveNum', 'frequency', 'power', 'speed');
     this.numWaves = buffer.length;
     this.buffer = buffer;
-    this.cmap = ColorMap.Jet;
+    this.cmap = ColorMap.gradientColorMap(256, [
+      [0, 0, 127],
+      [0, 0, 255],
+      [0, 127, 255],
+      [0, 255, 255],
+      [127, 255, 127],
+      [40, 0, 40],
+      [0, 0, 0],
+      [40, 0, 40],
+      [127, 255, 127],
+      [255, 255, 0],
+      [255, 127, 0],
+      [255, 0, 0],
+      [127, 0, 0],
+    ]);
+
     this.diffusionRate = 0;
     this.dissipationRate = 0;
     this.speed = 0.0;
@@ -48,21 +63,24 @@ export class Visualizer extends Model {
     this.goalEnergy = 100;
     this.ticks = 0;
     this.sinTick = 1;
+    this.showTurtles = true;
 
     this.turtles.create(this.buffer.length, t => {
       //this.turtles.create(1, t => {
       t.setxy(
-        (t.id / this.buffer.length) * (this.world.maxX - this.world.minX) +
+        ((t.id + 0.5) / this.buffer.length) *
+          (this.world.maxX - this.world.minX) +
           this.world.minX,
-        (t.id / this.buffer.length) * (this.world.maxX - this.world.minX) +
-          this.world.minX
+        0
+        // (t.id / this.buffer.length) * (this.world.maxX - this.world.minX) +
+        //   this.world.minX
       );
       //t.setxy(Math.random() * (this.world.maxX - this.world.minX) + this.world.minX,
       //    Math.random() * (this.world.maxX - this.world.minX) + this.world.minX);
       t.waveNum = t.id;
       //t.setxy((this.world.maxX - this.world.minX) / 16 * t.waveNum, (this.world.maxX - this.world.minX) / 16 * t.waveNum);
       t.frequency = ((t.waveNum + 1) * SAMPLE_RATE) / FFT_SIZE;
-      t.size = 10;
+      //   t.size = 10;
 
       t.heading = 90;
     });
@@ -79,14 +97,14 @@ export class Visualizer extends Model {
     this.ticks++;
     this.turtles.ask(t => {
       //t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
-      t.power = (this.buffer[t.waveNum] / 255.0) * t.frequency;
-      t.power *= Math.pow(t.power, 2) * this.ampScalar;
+      t.power = this.buffer[t.waveNum]; // * t.frequency;
+      t.power *= Math.pow(t.power, 1) * this.ampScalar;
       t.power *= Math.cos(this.ticks * this.sinTick);
-      t.size = (10 * this.buffer[t.waveNum]) / 255.0 + 5;
+      t.size = this.showTurtles ? (this.buffer[t.waveNum] / 255.0) * 50 + 1 : 0;
       t.patch.energy += t.power;
       //if (t.power !== 0)
       //     t.power = 0;
-      t.forward(this.speed);
+      t.forward((this.speed * t.frequency) / 10000);
     });
 
     this.k = 1 - 0.01 * this.surfaceTension;
