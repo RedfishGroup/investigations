@@ -19,51 +19,52 @@
         const { ColorMap, Model, SpriteSheet, util } = ASapp3d
         // run bash mklist.sh to make the paths list
         const paths = [
-            './pngs/Alibi.png',
-            './pngs/Amd.png',
-            './pngs/Axle.png',
-            './pngs/Biocultura.png',
-            './pngs/Currents.png',
-            './pngs/EMA.png',
-            './pngs/Evoke.png',
-            './pngs/FormAndConcept.png',
-            './pngs/Heliotown.png',
-            './pngs/HotelSantaFe.png',
-            './pngs/IAIA.png',
-            './pngs/JCC.png',
-            './pngs/JenniferBrianMurphy.png',
-            './pngs/LaserTalks.png',
-            './pngs/MakeSantaFe.png',
-            './pngs/MeowWolf.png',
-            './pngs/PasaTiempo.png',
-            './pngs/RailyardArtsDistrict.png',
-            './pngs/RailyardParkConservancy.png',
-            './pngs/SFArtsCommission.png',
-            './pngs/SFCC.png',
-            './pngs/SFChildrensMuseum.png',
-            './pngs/SFFarmersMarket.png',
-            './pngs/SFI.png',
-            './pngs/SFR.png',
-            './pngs/SiteSantaFe.png',
-            './pngs/ThomaFoundation.png',
-            './pngs/UnitedTherapeutics.png',
-            './pngs/VioletCrown.png',
+            ['./pngs/Alibi.png', 1.0],
+            ['./pngs/Amd.png', 1.0],
+            ['./pngs/Axle.png', 1.0],
+            ['./pngs/Biocultura.png', 1.0],
+            ['./pngs/Currents.png', 1.0],
+            ['./pngs/EMA.png', 1.0],
+            ['./pngs/Evoke.png', 1.0],
+            ['./pngs/FormAndConcept.png', 1.0],
+            ['./pngs/Heliotown.png', 1.0],
+            ['./pngs/HotelSantaFe.png', 1.0],
+            ['./pngs/IAIA.png', 1.0],
+            ['./pngs/JCC.png', 1.0],
+            ['./pngs/JenniferBrianMurphy.png', 3.0],
+            ['./pngs/LaserTalks.png', 1.0],
+            ['./pngs/MakeSantaFe.png', 1.0],
+            ['./pngs/MeowWolf.png', 1.0],
+            ['./pngs/PasaTiempo.png', 1.0],
+            ['./pngs/RailyardArtsDistrict.png', 1.0],
+            ['./pngs/RailyardParkConservancy.png', 1.0],
+            ['./pngs/SFArtsCommission.png', 1.0],
+            ['./pngs/SFCC.png', 1.0],
+            ['./pngs/SFChildrensMuseum.png', 1.0],
+            ['./pngs/SFFarmersMarket.png', 1.0],
+            ['./pngs/SFI.png', 3.0],
+            ['./pngs/SFR.png', 1.0],
+            ['./pngs/SiteSantaFe.png', 1.0],
+            ['./pngs/ThomaFoundation.png', 1.0],
+            ['./pngs/UnitedTherapeutics.png', 3.0],
+            ['./pngs/VioletCrown.png', 1.0],
         ]
         const sprites = []
 
         class Hello extends Model {
 
             async startup() {
-                for (const path of paths) {
+                let path, larger
+                for ([path, larger] of paths) {
                     const img = await util.imagePromise(path)
                     const sprite = this.spriteSheet.newSprite(img, 'black')
-                    sprites.push(sprite)
+                    sprites.push([sprite, larger])
                 }
             }
 
             setup() {
                 this.patches.ask(p => {
-                    p.color = ColorMap.DarkGray.randomColor()
+                    // p.color = ColorMap.DarkGray.randomColor()
                     // If we don't set color, patches are transparent.
                 })
 
@@ -73,7 +74,7 @@
                     const patch = this.patches.oneOf()
                     t.setxy(patch.x, patch.y)
                     t.theta = 0
-                    t.setSprite(sprites[t.id])
+                    t.setSprite(sprites[t.id][0])
                 })
                 this.layout()
 
@@ -96,7 +97,7 @@
                     const x = minXcor + size * (col + 1.5)
                     const y = maxYcor - size * (row + 1.5)
                     console.log(col, row, x, y)
-                    t.size = size * 0.8
+                    t.size = size * 0.8 * sprites[t.id][1]
                     // const col = t.id /
                     t.setxy(x, y, t.id)
                 })
