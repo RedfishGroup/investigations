@@ -24,11 +24,14 @@
             './pngs/Axle.png',
             './pngs/Biocultura.png',
             './pngs/Currents.png',
+            './pngs/EMA.png',
+            './pngs/Evoke.png',
             './pngs/FormAndConcept.png',
             './pngs/Heliotown.png',
             './pngs/HotelSantaFe.png',
             './pngs/IAIA.png',
             './pngs/JCC.png',
+            './pngs/JenniferBrianMurphy.png',
             './pngs/LaserTalks.png',
             './pngs/MakeSantaFe.png',
             './pngs/MeowWolf.png',
@@ -84,7 +87,7 @@
                 const {minXcor, maxYcor, width} = this.world
                 const cols = Math.ceil(Math.sqrt(sprites.length))
                 const rows = Math.ceil(sprites.length/cols)
-                const size = this.world.width / (cols + 2)
+                const size = width / (cols + 2)
                 console.log(cols, rows, size)
                 console.log(minXcor, maxYcor, width)
                 this.turtles.ask((t, i) => {
@@ -93,7 +96,7 @@
                     const x = minXcor + size * (col + 1.5)
                     const y = maxYcor - size * (row + 1.5)
                     console.log(col, row, x, y)
-                   t.size = size * 0.8
+                    t.size = size * 0.8
                     // const col = t.id /
                     t.setxy(x, y, t.id)
                 })

@@ -36,3 +36,5 @@ railyard.html:
 ====
 
 Stephen fixed the pngs, now all fine.
+
+Added 3 more logos
