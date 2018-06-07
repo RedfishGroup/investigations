@@ -1,0 +1,10 @@
+{
+  "name": "visualizer",
+  "version": "1.0.0",
+  "main": "microphone.html",
+  "license": "MIT",
+  "dependencies": {
+    "dat.gui": "^0.7.2",
+    "@redfish/as-app3d": "github:backspaces/as-app3d.git"
+  }
+}
