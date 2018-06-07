@@ -9,7 +9,7 @@ import {
   ColorMap,
   Model,
   SpriteSheet,
-} from 'http://backspaces.github.io/as-app3d/dist/as-app3d.esm.js';
+} from 'https://backspaces.github.io/as-app3d/dist/as-app3d.esm.js';
 
 let abs = Math.abs;
 let sin = Math.sin;
