@@ -28,7 +28,17 @@ LAST MODIFIED: 6 June 2018
         import * as dat from './node_modules/dat.gui/build/dat.gui.module.js';
 
         const BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
-        const viz = new Visualizer(document.getElementById('modeldiv'), { minX: -150, maxX: 150, minY: -150, maxY: 150 });
+
+        const renderOptions = {
+            ...Visualizer.defaultRenderer(),
+            useAxes: false,
+            useGrid: false
+        }
+
+        const viz = new Visualizer(
+            document.getElementById('modeldiv'),
+            { minX: -150, maxX: 150, minY: -150, maxY: 150, },
+            renderOptions);
         window.viz = viz;
 
         const { patches, turtles, links, spriteSheet } = viz
@@ -47,7 +57,21 @@ LAST MODIFIED: 6 June 2018
             gui.add(viz, 'speed', 0.0, 10.0, 0.01)
             gui.add(viz, 'sinTick', 0.0, 1.0, 0.001)
 
+            const position = gui.addFolder('position')
+            position.add(viz.view.camera.position, 'x', -500, 500, 0.1).listen()
+            position.add(viz.view.camera.position, 'y', -500, 500, 0.1).listen()
+            position.add(viz.view.camera.position, 'z', -500, 500, 0.1).listen()
 
+            const rotation = gui.addFolder('rotation')
+            rotation.add(viz.view.camera.rotation, 'x', -3, 3, 0.01).listen()
+            rotation.add(viz.view.camera.rotation, 'y', -3, 3, 0.01).listen()
+            rotation.add(viz.view.camera.rotation, 'z', -3, 3, 0.01).listen()
+
+            // gui.add(viz.view.camera.scale, 'x', -3, 3, 0.01).listen()
+            // gui.add(viz.view.camera.scale, 'y', -3, 3, 0.01).listen()
+            // gui.add(viz.view.camera.scale, 'z', -3, 3, 0.01).listen()
+
+            gui.close();
         }
 
 
