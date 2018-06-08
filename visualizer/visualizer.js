@@ -156,7 +156,7 @@ export class Visualizer extends Model {
 
   randomHeadings() {
     this.turtles.ask(t => {
-      t.heading = Math.random() * 360;
+      if (!t.isSprite) t.heading = Math.random() * 360;
     });
   }
 
@@ -168,7 +168,7 @@ export class Visualizer extends Model {
           this.currentSprite++;
           if (this.currentSprite >= sprites.length) this.currentSprite = 0;
           t.setSprite(sprites[this.currentSprite][0]);
-          t.size = 25 * sprites[this.currentSprite][1];
+          t.size = 20 * sprites[this.currentSprite][1];
           t.z = 3;
         }
       } else {
