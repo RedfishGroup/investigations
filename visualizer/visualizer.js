@@ -14,33 +14,33 @@ import {
 const paths = [
   ['./pngs/Alibi.png', 1.0],
   ['./pngs/Amd.png', 1.0],
-  ['./pngs/Axle.png', 1.0],
-  ['./pngs/Biocultura.png', 1.0],
-  ['./pngs/Currents.png', 1.0],
+  ['./pngs/Axle.png', 1.5],
+  ['./pngs/Biocultura.png', 1.5],
+  ['./pngs/Currents.png', 2.0],
   ['./pngs/EMA.png', 1.0],
-  ['./pngs/Evoke.png', 1.0],
-  ['./pngs/MillerOmegaProgram.png', 3.0],
-  ['./pngs/FormAndConcept.png', 1.0],
-  ['./pngs/Heliotown.png', 1.0],
+  ['./pngs/Evoke.png', 1.5],
+  ['./pngs/MillerOmegaProgram.png', 2.8],
+  ['./pngs/FormAndConcept.png', 1.5],
+  ['./pngs/Heliotown.png', 1.5],
   ['./pngs/HotelSantaFe.png', 1.0],
   ['./pngs/IAIA.png', 1.0],
-  ['./pngs/JCC.png', 1.0],
-  ['./pngs/JenniferBrianMurphy.png', 3.0],
+  ['./pngs/JCC.png', 2.0],
+  ['./pngs/JenniferBrianMurphy.png', 2.7],
   ['./pngs/LaserTalks.png', 1.0],
   ['./pngs/MakeSantaFe.png', 1.0],
   ['./pngs/MeowWolf.png', 1.0],
   ['./pngs/PasaTiempo.png', 1.0],
-  ['./pngs/RailyardArtsDistrict.png', 1.0],
+  ['./pngs/RailyardArtsDistrict.png', 2.0],
   ['./pngs/RailyardParkConservancy.png', 1.0],
   ['./pngs/SFArtsCommission.png', 1.0],
   ['./pngs/SFCC.png', 1.0],
   ['./pngs/SFChildrensMuseum.png', 1.0],
-  ['./pngs/SFFarmersMarket.png', 1.0],
-  ['./pngs/SFI.png', 3.0],
+  ['./pngs/SFFarmersMarket.png', 1.5],
+  ['./pngs/SFI.png', 2.5],
   ['./pngs/SFR.png', 1.0],
   ['./pngs/SiteSantaFe.png', 1.0],
   ['./pngs/ThomaFoundation.png', 1.0],
-  ['./pngs/UnitedTherapeutics.png', 3.0],
+  ['./pngs/UnitedTherapeutics.png', 2.8],
   ['./pngs/VioletCrown.png', 1.0],
 ];
 
@@ -132,7 +132,7 @@ export class Visualizer extends Model {
     });
 
     this.turtles.create(1, t => {
-      t.setxy(this.scaleX(0.69), this.scaleY(0.3858));
+      t.setxy(this.scaleX(0.69), this.scaleY(1 - 0.3858));
       t.isSprite = true;
       t.size = 10;
       t.heading = 0;
@@ -168,7 +168,7 @@ export class Visualizer extends Model {
           this.currentSprite++;
           if (this.currentSprite >= sprites.length) this.currentSprite = 0;
           t.setSprite(sprites[this.currentSprite][0]);
-          t.size = 10 * sprites[this.currentSprite][1];
+          t.size = 25 * sprites[this.currentSprite][1];
           t.z = 3;
         }
       } else {
@@ -229,8 +229,8 @@ export class Visualizer extends Model {
       if (
         p.x > this.scaleX(0.589) &&
         p.x < this.scaleX(0.792) &&
-        p.y > this.scaleY(0.308) &&
-        p.y < this.scaleY(0.463)
+        p.y < this.scaleY(1 - 0.308) &&
+        p.y > this.scaleY(1 - 0.463)
       )
         p.color = 0;
     });
