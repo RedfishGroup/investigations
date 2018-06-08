@@ -8,6 +8,7 @@ LAST MODIFIED: 6 June 2018
 <meta charset="UTF-8">
 
 <html>
+
 <style>
     body {
         background-color: black;
@@ -17,6 +18,12 @@ LAST MODIFIED: 6 June 2018
         mask-size: 100vw 100vh;
         -webkit-mask-size: 100vw 100vh;
     }
+
+    #gui {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+    }
 </style>
 
 <head>
@@ -24,7 +31,7 @@ LAST MODIFIED: 6 June 2018
 </head>
 
 <body>
-
+    <div id='gui'></div>
     <div id='modeldiv' style="width:100vw; height:100vh"></div>
 
     <script type='module'>
@@ -39,9 +46,12 @@ LAST MODIFIED: 6 June 2018
             useGrid: false
         }
 
+        const mult = 5;
+
         const viz = new Visualizer(
             document.getElementById('modeldiv'),
-            { minX: -160, maxX: 160, minY: -100, maxY: 100, },
+            { minX: -16 * mult, maxX: 16 * mult, minY: -10 * mult, maxY: 10 * mult, },
+            // { minX: -160, maxX: 160, minY: -100, maxY: 100, },
             renderOptions);
         window.viz = viz;
 
@@ -49,7 +59,12 @@ LAST MODIFIED: 6 June 2018
         util.toWindow({ patches, turtles, links, spriteSheet, model: viz })
 
         window.onload = function () {
-            var gui = new dat.GUI();
+            var gui = new dat.GUI({ autoPlace: false });
+
+            var customContainer = document.getElementById('gui');
+            customContainer.appendChild(gui.domElement);
+
+            document.getElementById('gui')
             gui.remember(viz);
 
             gui.add(viz, 'showTurtles', true)
@@ -95,24 +110,28 @@ LAST MODIFIED: 6 June 2018
         analyser.fftSize = 2 * BINS;
 
         const freqData = new Uint8Array(analyser.frequencyBinCount);
-        viz.setup(freqData);
-        viz.start();
 
-        function renderFrame() {
-            requestAnimationFrame(renderFrame);
-            analyser.getByteFrequencyData(freqData);
-            viz.buffer = freqData;
-            viz.step();
-        }
+        viz.startup().then(() => {
+            viz.setup(freqData);
+            viz.start();
 
-        let handleSuccess = function (stream) {
-            source = ctx.createMediaStreamSource(stream);
-            source.connect(analyser);
-            renderFrame();
-        };
+            function renderFrame() {
+                requestAnimationFrame(renderFrame);
+                analyser.getByteFrequencyData(freqData);
+                viz.buffer = freqData;
+                viz.step();
+            }
 
-        navigator.mediaDevices.getUserMedia(constraints)
-            .then(handleSuccess);
+            let handleSuccess = function (stream) {
+                source = ctx.createMediaStreamSource(stream);
+                source.connect(analyser);
+                renderFrame();
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(handleSuccess);
+
+        })
 
     </script>
 </body>

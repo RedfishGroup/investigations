@@ -11,6 +11,41 @@ import {
   SpriteSheet,
 } from 'https://backspaces.github.io/as-app3d/dist/as-app3d.esm.js';
 
+const paths = [
+  ['./pngs/Alibi.png', 1.0],
+  ['./pngs/Amd.png', 1.0],
+  ['./pngs/Axle.png', 1.0],
+  ['./pngs/Biocultura.png', 1.0],
+  ['./pngs/Currents.png', 1.0],
+  ['./pngs/EMA.png', 1.0],
+  ['./pngs/Evoke.png', 1.0],
+  ['./pngs/MillerOmegaProgram.png', 3.0],
+  ['./pngs/FormAndConcept.png', 1.0],
+  ['./pngs/Heliotown.png', 1.0],
+  ['./pngs/HotelSantaFe.png', 1.0],
+  ['./pngs/IAIA.png', 1.0],
+  ['./pngs/JCC.png', 1.0],
+  ['./pngs/JenniferBrianMurphy.png', 3.0],
+  ['./pngs/LaserTalks.png', 1.0],
+  ['./pngs/MakeSantaFe.png', 1.0],
+  ['./pngs/MeowWolf.png', 1.0],
+  ['./pngs/PasaTiempo.png', 1.0],
+  ['./pngs/RailyardArtsDistrict.png', 1.0],
+  ['./pngs/RailyardParkConservancy.png', 1.0],
+  ['./pngs/SFArtsCommission.png', 1.0],
+  ['./pngs/SFCC.png', 1.0],
+  ['./pngs/SFChildrensMuseum.png', 1.0],
+  ['./pngs/SFFarmersMarket.png', 1.0],
+  ['./pngs/SFI.png', 3.0],
+  ['./pngs/SFR.png', 1.0],
+  ['./pngs/SiteSantaFe.png', 1.0],
+  ['./pngs/ThomaFoundation.png', 1.0],
+  ['./pngs/UnitedTherapeutics.png', 3.0],
+  ['./pngs/VioletCrown.png', 1.0],
+];
+
+const sprites = [];
+
 let abs = Math.abs;
 let sin = Math.sin;
 let max = Math.max;
@@ -27,7 +62,15 @@ const GAIN = 1;
 util.toWindow({ Model, util });
 
 export class Visualizer extends Model {
-  async startup() {}
+  async startup() {
+    let path, larger;
+    for ([path, larger] of paths) {
+      const img = await util.imagePromise(path);
+      const sprite = this.spriteSheet.newSprite(img, 'black');
+      sprites.push([sprite, larger]);
+    }
+    window.sprites = sprites;
+  }
 
   setup(buffer) {
     this.ticks = 0;
@@ -65,6 +108,8 @@ export class Visualizer extends Model {
     this.sinTick = 0.1;
     this.showTurtles = true;
     this.randomNoise = 1;
+    this.currentSprite = 0;
+    this.ticksPerSprite = 100;
 
     this.turtles.create(this.buffer.length, t => {
       //this.turtles.create(1, t => {
@@ -86,12 +131,27 @@ export class Visualizer extends Model {
       t.heading = 90;
     });
 
+    this.turtles.create(1, t => {
+      t.setxy(this.scaleX(0.69), this.scaleY(0.3858));
+      t.isSprite = true;
+      t.size = 10;
+      t.heading = 0;
+    });
+
     this.patches.ask(p => {
       p.energy = 0;
       p.energyVelocity = 0;
     });
 
     this.turtles.setDefault('atEdge', 'bounce');
+  }
+
+  scaleX(f) {
+    return f * (this.world.maxX - this.world.minX) + this.world.minX;
+  }
+
+  scaleY(f) {
+    return f * (this.world.maxY - this.world.minY) + this.world.minY;
   }
 
   randomHeadings() {
@@ -103,15 +163,27 @@ export class Visualizer extends Model {
   step() {
     this.ticks++;
     this.turtles.ask(t => {
-      //t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
-      t.power = this.buffer[t.waveNum]; // * t.frequency;
-      t.power *= Math.pow(t.power, 1) * this.ampScalar;
-      t.power *= Math.cos(this.ticks * this.sinTick);
-      t.size = this.showTurtles ? (this.buffer[t.waveNum] / 255.0) * 50 + 1 : 0;
-      t.patch.energy += t.power;
-      //if (t.power !== 0)
-      //     t.power = 0;
-      t.forward((this.speed * t.frequency) / 10000);
+      if (t.isSprite) {
+        if (this.ticks % this.ticksPerSprite == 0) {
+          this.currentSprite++;
+          if (this.currentSprite >= sprites.length) this.currentSprite = 0;
+          t.setSprite(sprites[this.currentSprite][0]);
+          t.size = 10 * sprites[this.currentSprite][1];
+          t.z = 3;
+        }
+      } else {
+        //t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
+        t.power = this.buffer[t.waveNum]; // * t.frequency;
+        t.power *= Math.pow(t.power, 1) * this.ampScalar;
+        t.power *= Math.cos(this.ticks * this.sinTick);
+        t.size = this.showTurtles
+          ? (this.buffer[t.waveNum] / 255.0) * 50 + 1
+          : 0;
+        t.patch.energy += t.power;
+        //if (t.power !== 0)
+        //     t.power = 0;
+        t.forward((this.speed * t.frequency) / 10000);
+      }
     });
 
     this.k = 1 - 0.01 * this.surfaceTension;
@@ -152,6 +224,16 @@ export class Visualizer extends Model {
       -1 * this.energyLimit,
       this.energyLimit
     );
+
+    this.patches.ask(p => {
+      if (
+        p.x > this.scaleX(0.589) &&
+        p.x < this.scaleX(0.792) &&
+        p.y > this.scaleY(0.308) &&
+        p.y < this.scaleY(0.463)
+      )
+        p.color = 0;
+    });
   }
 }
 
