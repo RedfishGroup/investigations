@@ -34,6 +34,8 @@ LAST MODIFIED: 6 June 2018
     <div id='gui'></div>
     <div id='modeldiv' style="width:100vw; height:100vh"></div>
 
+    <div id='leftcurtain' style="width: 0px; height:100vh; position: absolute; top:0; left:0"></div>
+
     <script type='module'>
         import { Visualizer } from './visualizer.js';
         import * as dat from './node_modules/dat.gui/build/dat.gui.module.js';
@@ -81,6 +83,13 @@ LAST MODIFIED: 6 June 2018
             gui.add(viz, 'energyLimit', 1, 10000, 0.1);
             gui.add(viz, 'speed', 0.0, 10.0, 0.0001)
             gui.add(viz, 'sinTick', 0.0, 1.0, 0.001)
+
+
+            gui.add(viz, 'maskSize', 0.0, 1000.0, 0.1)
+            gui.add(viz, 'maskX', viz.world.minX, viz.world.maxX, 0.1)
+            gui.add(viz, 'maskY', viz.world.minY, viz.world.maxY, 0.1)
+            gui.add(viz, 'maskHeading', -180, 180, 0.1)
+
 
             gui.add(viz, 'ticksPerSprite', 1, 10000, 1)
 
@@ -137,7 +146,24 @@ LAST MODIFIED: 6 June 2018
 
         })
 
+
+        // cut/paste to console to see the sprites:
+        // document.body.appendChild(spriteSheet.ctx.canvas)
+        document.onkeypress = function (oPEvt) {
+            var oEvent = oPEvt || window.event,
+                nChr = oEvent.charCode,
+                sNodeType = oEvent.target.nodeName.toUpperCase();
+            console.log(oPEvt, nChr);
+            if (oPEvt.key == 'x') {
+                let curtain = document.getElementById('leftcurtain')
+                curtain.style.width = curtain.style.width + 10
+            }
+            return true;
+        };
+
+
     </script>
+
 </body>
 
 </html>

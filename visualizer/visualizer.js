@@ -111,6 +111,11 @@ export class Visualizer extends Model {
     this.currentSprite = 0;
     this.ticksPerSprite = 100;
 
+    this.maskSize = 0;
+    this.maskHeading = 0;
+    this.maskX = 0;
+    this.maskY = 0;
+
     this.turtles.create(this.buffer.length, t => {
       //this.turtles.create(1, t => {
       t.setxy(
@@ -136,6 +141,15 @@ export class Visualizer extends Model {
       t.isSprite = true;
       t.size = 10;
       t.heading = 0;
+    });
+
+    this.turtles.create(1, t => {
+      t.setxy(0, 0);
+      t.name = 'mask';
+      t.size = 100;
+      t.z = 20;
+      t.color = 'black';
+      t.setShape('square');
     });
 
     this.patches.ask(p => {
@@ -171,6 +185,11 @@ export class Visualizer extends Model {
           t.size = 20 * sprites[this.currentSprite][1];
           t.z = 3;
         }
+      } else if (t.name === 'mask') {
+        t.size = this.maskSize;
+        t.x = this.maskX;
+        t.y = this.maskY;
+        t.heading = this.maskHeading;
       } else {
         //t.power = (this.buffer[t.waveNum] * Math.log(t.frequency)/Math.log(16*SAMPLE_RATE/FFT_SIZE));
         t.power = this.buffer[t.waveNum]; // * t.frequency;
