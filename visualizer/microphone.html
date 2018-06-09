@@ -72,8 +72,10 @@ LAST MODIFIED: 6 June 2018
             gui.remember(viz);
 
             gui.add(viz, 'showTurtles', true)
+
             gui.add(viz, 'randomHeadings')
             gui.add(viz, 'alignHeadings')
+
             gui.add(viz, 'ampScalar', 0, 100.0, 0.1);
             gui.add(viz, 'surfaceTension', 0, 100);
             gui.add(viz, 'friction', 0.0, 1.0, 0.0001);
@@ -87,7 +89,7 @@ LAST MODIFIED: 6 June 2018
 
             gui.add(viz, 'turtleHeading', -180, 180, 0.1)
 
-
+            gui.add(viz, 'logoSize', 0, 100, 1)
             gui.add(viz, 'ticksPerSprite', 1, 10000, 1)
 
             const mask = gui.addFolder('mask')

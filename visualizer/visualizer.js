@@ -117,6 +117,7 @@ export class Visualizer extends Model {
     this.maskY = 0;
 
     this.turtleHeading = 0;
+    this.logoSize = 22;
 
     this.turtles.create(this.buffer.length, t => {
       //this.turtles.create(1, t => {
@@ -130,6 +131,7 @@ export class Visualizer extends Model {
       );
       //t.setxy(Math.random() * (this.world.maxX - this.world.minX) + this.world.minX,
       //    Math.random() * (this.world.maxX - this.world.minX) + this.world.minX);
+      t.z = t.id;
       t.waveNum = t.id;
       //t.setxy((this.world.maxX - this.world.minX) / 16 * t.waveNum, (this.world.maxX - this.world.minX) / 16 * t.waveNum);
       t.frequency = ((t.waveNum + 1) * SAMPLE_RATE) / FFT_SIZE;
@@ -149,7 +151,7 @@ export class Visualizer extends Model {
       t.setxy(0, 0);
       t.name = 'mask';
       t.size = 100;
-      t.z = 20;
+      t.z = 10;
       t.color = 'black';
       t.setShape('square');
     });
@@ -190,9 +192,9 @@ export class Visualizer extends Model {
           this.currentSprite++;
           if (this.currentSprite >= sprites.length) this.currentSprite = 0;
           t.setSprite(sprites[this.currentSprite][0]);
-          t.size = 20 * sprites[this.currentSprite][1];
           t.z = 3;
         }
+        t.size = this.logoSize * sprites[this.currentSprite][1];
       } else if (t.name === 'mask') {
         t.size = this.maskSize;
         t.x = this.maskX;
