@@ -73,6 +73,7 @@ LAST MODIFIED: 6 June 2018
 
             gui.add(viz, 'showTurtles', true)
             gui.add(viz, 'randomHeadings')
+            gui.add(viz, 'alignHeadings')
             gui.add(viz, 'ampScalar', 0, 100.0, 0.1);
             gui.add(viz, 'surfaceTension', 0, 100);
             gui.add(viz, 'friction', 0.0, 1.0, 0.0001);
@@ -84,14 +85,18 @@ LAST MODIFIED: 6 June 2018
             gui.add(viz, 'speed', 0.0, 10.0, 0.0001)
             gui.add(viz, 'sinTick', 0.0, 1.0, 0.001)
 
-
-            gui.add(viz, 'maskSize', 0.0, 1000.0, 0.1)
-            gui.add(viz, 'maskX', viz.world.minX, viz.world.maxX, 0.1)
-            gui.add(viz, 'maskY', viz.world.minY, viz.world.maxY, 0.1)
-            gui.add(viz, 'maskHeading', -180, 180, 0.1)
+            gui.add(viz, 'turtleHeading', -180, 180, 0.1)
 
 
             gui.add(viz, 'ticksPerSprite', 1, 10000, 1)
+
+            const mask = gui.addFolder('mask')
+            mask.add(viz, 'maskSize', 0.0, 1000.0, 0.1)
+            mask.add(viz, 'maskX', viz.world.minX - 500, viz.world.maxX + 500, 0.1)
+            mask.add(viz, 'maskY', viz.world.minY - 500, viz.world.maxY + 500, 0.1)
+            mask.add(viz, 'maskHeading', -180, 180, 0.1)
+
+
 
 
             const position = gui.addFolder('position')

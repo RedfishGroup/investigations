@@ -116,6 +116,8 @@ export class Visualizer extends Model {
     this.maskX = 0;
     this.maskY = 0;
 
+    this.turtleHeading = 0;
+
     this.turtles.create(this.buffer.length, t => {
       //this.turtles.create(1, t => {
       t.setxy(
@@ -170,7 +172,13 @@ export class Visualizer extends Model {
 
   randomHeadings() {
     this.turtles.ask(t => {
-      if (!t.isSprite) t.heading = Math.random() * 360;
+      if (!t.isSprite && !t.name === 'mask') t.heading = Math.random() * 360;
+    });
+  }
+
+  alignHeadings() {
+    this.turtles.ask(t => {
+      if (!t.isSprite && !t.name === 'mask') t.heading = this.turtleHeading;
     });
   }
 
