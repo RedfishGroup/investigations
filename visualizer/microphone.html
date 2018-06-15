@@ -72,6 +72,7 @@ LAST MODIFIED: 6 June 2018
             gui.remember(viz);
 
             gui.add(viz, 'showTurtles', true)
+            gui.add(viz, 'showLogo', false)
 
             gui.add(viz, 'randomHeadings')
             gui.add(viz, 'alignHeadings')
@@ -111,9 +112,10 @@ LAST MODIFIED: 6 June 2018
             rotation.add(viz.view.camera.rotation, 'y', -3, 3, 0.01).listen()
             rotation.add(viz.view.camera.rotation, 'z', -3, 3, 0.01).listen()
 
-            // gui.add(viz.view.camera.scale, 'x', -3, 3, 0.01).listen()
-            // gui.add(viz.view.camera.scale, 'y', -3, 3, 0.01).listen()
-            // gui.add(viz.view.camera.scale, 'z', -3, 3, 0.01).listen()
+            const scale = gui.addFolder('scale')
+            scale.add(viz.view.camera.scale, 'x', -3, 3, 0.01).listen()
+            scale.add(viz.view.camera.scale, 'y', -3, 3, 0.01).listen()
+            scale.add(viz.view.camera.scale, 'z', -3, 3, 0.01).listen()
 
             gui.close();
         }

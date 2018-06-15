@@ -12,36 +12,36 @@ import {
 } from 'https://backspaces.github.io/as-app3d/dist/as-app3d.esm.js';
 
 const paths = [
-  ['./pngs/Alibi.png', 1.0],
-  ['./pngs/Amd.png', 1.0],
-  ['./pngs/Axle.png', 1.5],
-  ['./pngs/Biocultura.png', 1.5],
-  ['./pngs/Currents.png', 2.0],
-  ['./pngs/EMA.png', 1.0],
-  ['./pngs/Evoke.png', 1.5],
-  ['./pngs/MillerOmegaProgram.png', 2.8],
-  ['./pngs/FormAndConcept.png', 1.5],
-  ['./pngs/Heliotown.png', 1.5],
-  ['./pngs/HotelSantaFe.png', 1.0],
-  ['./pngs/IAIA.png', 1.0],
-  ['./pngs/JCC.png', 2.0],
-  ['./pngs/JenniferBrianMurphy.png', 2.7],
-  ['./pngs/LaserTalks.png', 1.0],
-  ['./pngs/MakeSantaFe.png', 1.0],
-  ['./pngs/MeowWolf.png', 1.0],
-  ['./pngs/PasaTiempo.png', 1.0],
-  ['./pngs/RailyardArtsDistrict.png', 2.0],
-  ['./pngs/RailyardParkConservancy.png', 1.0],
-  ['./pngs/SFArtsCommission.png', 1.0],
-  ['./pngs/SFCC.png', 1.0],
-  ['./pngs/SFChildrensMuseum.png', 1.0],
-  ['./pngs/SFFarmersMarket.png', 1.5],
+  //   ['./pngs/Alibi.png', 1.0],
+  //   ['./pngs/Amd.png', 1.0],
+  //   ['./pngs/Axle.png', 1.5],
+  //   ['./pngs/Biocultura.png', 1.5],
+  //   ['./pngs/Currents.png', 2.0],
+  //   ['./pngs/EMA.png', 1.0],
+  //   ['./pngs/Evoke.png', 1.5],
+  //   ['./pngs/MillerOmegaProgram.png', 2.8],
+  //   ['./pngs/FormAndConcept.png', 1.5],
+  //   ['./pngs/Heliotown.png', 1.5],
+  //   ['./pngs/HotelSantaFe.png', 1.0],
+  //   ['./pngs/IAIA.png', 1.0],
+  //   ['./pngs/JCC.png', 2.0],
+  //   ['./pngs/JenniferBrianMurphy.png', 2.7],
+  //   ['./pngs/LaserTalks.png', 1.0],
+  //   ['./pngs/MakeSantaFe.png', 1.0],
+  //   ['./pngs/MeowWolf.png', 1.0],
+  //   ['./pngs/PasaTiempo.png', 1.0],
+  //   ['./pngs/RailyardArtsDistrict.png', 2.0],
+  //   ['./pngs/RailyardParkConservancy.png', 1.0],
+  //   ['./pngs/SFArtsCommission.png', 1.0],
+  //   ['./pngs/SFCC.png', 1.0],
+  //   ['./pngs/SFChildrensMuseum.png', 1.0],
+  //   ['./pngs/SFFarmersMarket.png', 1.5],
   ['./pngs/SFI.png', 2.5],
-  ['./pngs/SFR.png', 1.0],
-  ['./pngs/SiteSantaFe.png', 1.0],
-  ['./pngs/ThomaFoundation.png', 1.0],
-  ['./pngs/UnitedTherapeutics.png', 2.8],
-  ['./pngs/VioletCrown.png', 1.0],
+  //   ['./pngs/SFR.png', 1.0],
+  //   ['./pngs/SiteSantaFe.png', 1.0],
+  //   ['./pngs/ThomaFoundation.png', 1.0],
+  //   ['./pngs/UnitedTherapeutics.png', 2.8],
+  //   ['./pngs/VioletCrown.png', 1.0],
 ];
 
 const sprites = [];
@@ -111,6 +111,8 @@ export class Visualizer extends Model {
     this.currentSprite = 0;
     this.ticksPerSprite = 100;
 
+    this.showLogo = false;
+
     this.maskSize = 0;
     this.maskHeading = 0;
     this.maskX = 0;
@@ -151,7 +153,7 @@ export class Visualizer extends Model {
       t.setxy(0, 0);
       t.name = 'mask';
       t.size = 100;
-      t.z = 10;
+      t.z = 30;
       t.color = 'black';
       t.setShape('square');
     });
@@ -173,14 +175,18 @@ export class Visualizer extends Model {
   }
 
   randomHeadings() {
+    console.log('change heading');
     this.turtles.ask(t => {
-      if (!t.isSprite && !t.name === 'mask') t.heading = Math.random() * 360;
+      if (!t.isSprite) {
+        t.heading = Math.random() * 360;
+      }
     });
   }
 
   alignHeadings() {
+    let heading = Math.round(Math.random() * 4) * 90;
     this.turtles.ask(t => {
-      if (!t.isSprite && !t.name === 'mask') t.heading = this.turtleHeading;
+      if (!t.isSprite) t.heading = this.turtleHeading;
     });
   }
 
@@ -192,9 +198,12 @@ export class Visualizer extends Model {
           this.currentSprite++;
           if (this.currentSprite >= sprites.length) this.currentSprite = 0;
           t.setSprite(sprites[this.currentSprite][0]);
-          t.z = 3;
         }
-        t.size = this.logoSize * sprites[this.currentSprite][1];
+        if (this.showLogo) {
+          t.size = this.logoSize * sprites[this.currentSprite][1];
+        } else {
+          t.size = 0;
+        }
       } else if (t.name === 'mask') {
         t.size = this.maskSize;
         t.x = this.maskX;
@@ -206,7 +215,7 @@ export class Visualizer extends Model {
         t.power *= Math.pow(t.power, 1) * this.ampScalar;
         t.power *= Math.cos(this.ticks * this.sinTick);
         t.size = this.showTurtles
-          ? (this.buffer[t.waveNum] / 255.0) * 50 + 1
+          ? (this.buffer[t.waveNum] / 255.0) * 25 + 1
           : 0;
         t.patch.energy += t.power;
         //if (t.power !== 0)
@@ -254,15 +263,17 @@ export class Visualizer extends Model {
       this.energyLimit
     );
 
-    this.patches.ask(p => {
-      if (
-        p.x > this.scaleX(0.589) &&
-        p.x < this.scaleX(0.792) &&
-        p.y < this.scaleY(1 - 0.308) &&
-        p.y > this.scaleY(1 - 0.463)
-      )
-        p.color = 0;
-    });
+    if (this.showLogo) {
+      this.patches.ask(p => {
+        if (
+          p.x > this.scaleX(0.589) &&
+          p.x < this.scaleX(0.792) &&
+          p.y < this.scaleY(1 - 0.308) &&
+          p.y > this.scaleY(1 - 0.463)
+        )
+          p.color = 0;
+      });
+    }
   }
 }
 
