@@ -103,7 +103,7 @@ LAST MODIFIED: 6 June 2018
 
 
             const position = gui.addFolder('position')
-            position.add(viz.view.camera.position, 'x', -500, 500, 0.1).listen()
+            position.add(viz.view.camera.position, 'x', -500, 500, 0.1).listen().onChange(x => console.log(x))
             position.add(viz.view.camera.position, 'y', -500, 500, 0.1).listen()
             position.add(viz.view.camera.position, 'z', -500, 500, 0.1).listen()
 
