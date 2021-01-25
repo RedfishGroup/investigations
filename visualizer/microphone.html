@@ -23,11 +23,18 @@ LAST MODIFIED: 6 June 2018
       top: 2px;
       left: 2px;
     }
+
+    #start-message {
+        color: white;
+        font-size: 4em;
+    }
+
   </style>
 
   <head> </head>
 
   <body>
+      <header id="start-message">Click Mouse to Begin</header>
     <div id="gui"></div>
     <div id="modeldiv" style="width: 100vw; height: 100vh"></div>
 
@@ -163,7 +170,12 @@ LAST MODIFIED: 6 June 2018
         });
       };
 
+
       document.onmousedown = (e) => {
+        console.log('got mouse click')
+        let startMessage = document.getElementById("start-message");
+        startMessage.style.display = "none"
+
         audioModelSetup();
         document.onmousedown = null;
       };
