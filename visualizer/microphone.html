@@ -5,126 +5,116 @@ LAST MODIFIED: 6 June 2018
 -->
 
 <!DOCTYPE html>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 
 <html>
-
-<style>
+  <style>
     body {
-        background-color: black;
-        margin: 0px;
-        /* -webkit-mask-image: url("./mask.png");
+      background-color: black;
+      margin: 0px;
+      /* -webkit-mask-image: url("./mask.png");
         mask-image: url("./mask.png");
         mask-size: 100vw 100vh;
         -webkit-mask-size: 100vw 100vh; */
     }
 
     #gui {
-        position: absolute;
-        top: 2px;
-        left: 2px;
+      position: absolute;
+      top: 2px;
+      left: 2px;
     }
-</style>
+  </style>
 
-<head>
+  <head> </head>
 
-</head>
+  <body>
+    <div id="gui"></div>
+    <div id="modeldiv" style="width: 100vw; height: 100vh"></div>
 
-<body>
-    <div id='gui'></div>
-    <div id='modeldiv' style="width:100vw; height:100vh"></div>
+    <div
+      id="leftcurtain"
+      style="width: 0px; height: 100vh; position: absolute; top: 0; left: 0"
+    ></div>
 
-    <div id='leftcurtain' style="width: 0px; height:100vh; position: absolute; top:0; left:0"></div>
+    <script type="module">
+      import { Visualizer } from "./visualizer.js";
+      import * as dat from "./node_modules/dat.gui/build/dat.gui.module.js";
 
-    <script type='module'>
-        import { Visualizer } from './visualizer.js';
-        import * as dat from './node_modules/dat.gui/build/dat.gui.module.js';
+      const BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
 
-        const BINS = 16; // Must be a power of two between 16 and 16384 (inclusive)
+      const renderOptions = {
+        ...Visualizer.defaultRenderer(),
+        useAxes: false,
+        useGrid: false,
+        spriteSize: 1024,
+      };
 
-        const renderOptions = {
-            ...Visualizer.defaultRenderer(),
-            useAxes: false,
-            useGrid: false,
-            spriteSize: 1024
+      const mult = 10;
 
-        }
+      const setupGUI = function () {
 
-        const mult = 10;
+        var gui = new dat.GUI({ autoPlace: false });
 
-        const viz = new Visualizer(
-            document.getElementById('modeldiv'),
-            { minX: -16 * mult, maxX: 16 * mult, minY: -10 * mult, maxY: 10 * mult, },
-            // { minX: -160, maxX: 160, minY: -100, maxY: 100, },
-            renderOptions);
-        window.viz = viz;
+        var customContainer = document.getElementById("gui");
+        customContainer.appendChild(gui.domElement);
 
-        const { patches, turtles, links, spriteSheet } = viz
-        util.toWindow({ patches, turtles, links, spriteSheet, model: viz })
+        document.getElementById("gui");
+        gui.remember(viz);
 
-        window.onload = function () {
-            var gui = new dat.GUI({ autoPlace: false });
+        gui.add(viz, "showTurtles", true);
+        gui.add(viz, "showLogo", false);
 
-            var customContainer = document.getElementById('gui');
-            customContainer.appendChild(gui.domElement);
+        gui.add(viz, "randomHeadings");
+        gui.add(viz, "alignHeadings");
 
-            document.getElementById('gui')
-            gui.remember(viz);
+        gui.add(viz, "ampScalar", 0, 100.0, 0.1);
+        gui.add(viz, "surfaceTension", 0, 100);
+        gui.add(viz, "friction", 0.0, 1.0, 0.0001);
+        gui.add(viz, "diffusionRate", 0.0, 1.0, 0.0001);
+        gui.add(viz, "dissipationRate", 0.0, 0.1, 0.001);
+        gui.add(viz, "randomNoise", 0.0, 10.0, 0.001);
 
-            gui.add(viz, 'showTurtles', true)
-            gui.add(viz, 'showLogo', false)
+        gui.add(viz, "energyLimit", 1, 10000, 0.1);
+        gui.add(viz, "speed", 0.0, 10.0, 0.0001);
+        gui.add(viz, "sinTick", 0.0, 1.0, 0.001);
 
-            gui.add(viz, 'randomHeadings')
-            gui.add(viz, 'alignHeadings')
+        gui.add(viz, "turtleHeading", -180, 180, 0.1);
 
-            gui.add(viz, 'ampScalar', 0, 100.0, 0.1);
-            gui.add(viz, 'surfaceTension', 0, 100);
-            gui.add(viz, 'friction', 0.0, 1.0, 0.0001);
-            gui.add(viz, 'diffusionRate', 0.0, 1.0, 0.0001);
-            gui.add(viz, 'dissipationRate', 0.0, 0.1, 0.001);
-            gui.add(viz, 'randomNoise', 0.0, 10.0, 0.001);
+        gui.add(viz, "logoSize", 0, 100, 1);
+        gui.add(viz, "ticksPerSprite", 1, 10000, 1);
 
-            gui.add(viz, 'energyLimit', 1, 10000, 0.1);
-            gui.add(viz, 'speed', 0.0, 10.0, 0.0001)
-            gui.add(viz, 'sinTick', 0.0, 1.0, 0.001)
+        const mask = gui.addFolder("mask");
+        mask.add(viz, "maskSize", 0.0, 1000.0, 0.1);
+        mask.add(viz, "maskX", viz.world.minX - 500, viz.world.maxX + 500, 0.1);
+        mask.add(viz, "maskY", viz.world.minY - 500, viz.world.maxY + 500, 0.1);
+        mask.add(viz, "maskHeading", -180, 180, 0.1);
 
-            gui.add(viz, 'turtleHeading', -180, 180, 0.1)
+        const position = gui.addFolder("position");
+        position
+          .add(viz.view.camera.position, "x", -500, 500, 0.1)
+          .listen()
+          .onChange((x) => console.log(x));
+        position.add(viz.view.camera.position, "y", -500, 500, 0.1).listen();
+        position.add(viz.view.camera.position, "z", -500, 500, 0.1).listen();
 
-            gui.add(viz, 'logoSize', 0, 100, 1)
-            gui.add(viz, 'ticksPerSprite', 1, 10000, 1)
+        const rotation = gui.addFolder("rotation");
+        rotation.add(viz.view.camera.rotation, "x", -3, 3, 0.01).listen();
+        rotation.add(viz.view.camera.rotation, "y", -3, 3, 0.01).listen();
+        rotation.add(viz.view.camera.rotation, "z", -3, 3, 0.01).listen();
 
-            const mask = gui.addFolder('mask')
-            mask.add(viz, 'maskSize', 0.0, 1000.0, 0.1)
-            mask.add(viz, 'maskX', viz.world.minX - 500, viz.world.maxX + 500, 0.1)
-            mask.add(viz, 'maskY', viz.world.minY - 500, viz.world.maxY + 500, 0.1)
-            mask.add(viz, 'maskHeading', -180, 180, 0.1)
+        const scale = gui.addFolder("scale");
+        scale.add(viz.view.camera.scale, "x", -3, 3, 0.01).listen();
+        scale.add(viz.view.camera.scale, "y", -3, 3, 0.01).listen();
+        scale.add(viz.view.camera.scale, "z", -3, 3, 0.01).listen();
 
+        gui.close();
+      };
 
+      // window.onload = function () {
 
+      // Set up audio context
 
-            const position = gui.addFolder('position')
-            position.add(viz.view.camera.position, 'x', -500, 500, 0.1).listen().onChange(x => console.log(x))
-            position.add(viz.view.camera.position, 'y', -500, 500, 0.1).listen()
-            position.add(viz.view.camera.position, 'z', -500, 500, 0.1).listen()
-
-            const rotation = gui.addFolder('rotation')
-            rotation.add(viz.view.camera.rotation, 'x', -3, 3, 0.01).listen()
-            rotation.add(viz.view.camera.rotation, 'y', -3, 3, 0.01).listen()
-            rotation.add(viz.view.camera.rotation, 'z', -3, 3, 0.01).listen()
-
-            const scale = gui.addFolder('scale')
-            scale.add(viz.view.camera.scale, 'x', -3, 3, 0.01).listen()
-            scale.add(viz.view.camera.scale, 'y', -3, 3, 0.01).listen()
-            scale.add(viz.view.camera.scale, 'z', -3, 3, 0.01).listen()
-
-            gui.close();
-        }
-
-
-        // window.onload = function () {
-
-        // Set up audio context
-
+      const audioModelSetup = () => {
         const ctx = new AudioContext();
         const constraints = { audio: true };
         var source;
@@ -133,46 +123,64 @@ LAST MODIFIED: 6 June 2018
 
         const freqData = new Uint8Array(analyser.frequencyBinCount);
 
+        const viz = new Visualizer(
+          document.getElementById("modeldiv"),
+          {
+            minX: -16 * mult,
+            maxX: 16 * mult,
+            minY: -10 * mult,
+            maxY: 10 * mult,
+          },
+          // { minX: -160, maxX: 160, minY: -100, maxY: 100, },
+          renderOptions
+        );
+        window.viz = viz;
+
+        const { patches, turtles, links, spriteSheet } = viz;
+        util.toWindow({ patches, turtles, links, spriteSheet, model: viz });
+
+
         viz.startup().then(() => {
-            viz.setup(freqData);
-            viz.start();
-
-            function renderFrame() {
-                requestAnimationFrame(renderFrame);
-                analyser.getByteFrequencyData(freqData);
-                viz.buffer = freqData;
-                viz.step();
-            }
-
-            let handleSuccess = function (stream) {
-                source = ctx.createMediaStreamSource(stream);
-                source.connect(analyser);
-                renderFrame();
-            };
-
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then(handleSuccess);
-
-        })
+          viz.setup(freqData);
+          viz.start();
+          setupGUI();
 
 
-        // cut/paste to console to see the sprites:
-        // document.body.appendChild(spriteSheet.ctx.canvas)
-        document.onkeypress = function (oPEvt) {
-            var oEvent = oPEvt || window.event,
-                nChr = oEvent.charCode,
-                sNodeType = oEvent.target.nodeName.toUpperCase();
-            console.log(oPEvt, nChr);
-            if (oPEvt.key == 'x') {
-                let curtain = document.getElementById('leftcurtain')
-                curtain.style.width = curtain.style.width + 10
-            }
-            return true;
-        };
+          function renderFrame() {
+            requestAnimationFrame(renderFrame);
+            analyser.getByteFrequencyData(freqData);
+            viz.buffer = freqData;
+            viz.step();
+          }
 
+          let handleSuccess = function (stream) {
+            source = ctx.createMediaStreamSource(stream);
+            source.connect(analyser);
+            renderFrame();
+          };
 
+          navigator.mediaDevices.getUserMedia(constraints).then(handleSuccess);
+        });
+      };
+
+      document.onmousedown = (e) => {
+        audioModelSetup();
+        document.onmousedown = null;
+      };
+
+      // cut/paste to console to see the sprites:
+      // document.body.appendChild(spriteSheet.ctx.canvas)
+      document.onkeypress = function (oPEvt) {
+        var oEvent = oPEvt || window.event,
+          nChr = oEvent.charCode,
+          sNodeType = oEvent.target.nodeName.toUpperCase();
+        console.log(oPEvt, nChr);
+        if (oPEvt.key == "x") {
+          let curtain = document.getElementById("leftcurtain");
+          curtain.style.width = curtain.style.width + 10;
+        }
+        return true;
+      };
     </script>
-
-</body>
-
+  </body>
 </html>
