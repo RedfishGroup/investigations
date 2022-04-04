@@ -1,6 +1,6 @@
 
 
-import { imageToImageData, latLngToSlippyXYZ } from "./utils"
+import { imageToImageData, latLngToSlippyXYZ } from "./utils.js"
 
 /**
  * Get Mapzen tiles for a slippy map tile as a float64array.
@@ -25,8 +25,8 @@ export async function getAndDecodeTerrariumElevationTile(x, y, z){
  * @returns Float64Array
  */
 export async function getAndDecodeMapzenElevationTileFromLatLng(lat, lng, z){
-    const [x, y, z] = latLngToSlippyXYZ(lat, lng, z)
-    const result = await getAndDecodeTerrariumElevationTile(x, y, z)
+    const [x, y, zz] = latLngToSlippyXYZ(lat, lng, z)
+    const result = await getAndDecodeTerrariumElevationTile(x, y, zz)
     return result
 }
 
