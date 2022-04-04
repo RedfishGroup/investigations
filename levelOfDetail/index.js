@@ -1,5 +1,5 @@
 import * as THREE from "three";
-
+import {getAndDecodeMapzenElevationTileFromLatLng} from "./elevationUtils.js"
 function main() {
   // renderer setup
   const parent = document.querySelector("#threeDiv");
@@ -53,3 +53,20 @@ function main() {
 }
 
 main();
+
+
+
+
+//test
+async function testTerrain(){
+    const elevation = await getAndDecodeMapzenElevationTileFromLatLng(35,-106, 12)
+    if(elevation.length !== 256*256){
+        console.error("elevation array is not 256x256")
+    } else if(Math.round(elevation[4]) !== 1908){
+        console.error("elevation at 4,4 is not 1908")
+    } else {
+        console.log("test passed")
+    }
+}
+
+setTimeout(testTerrain, 1)
