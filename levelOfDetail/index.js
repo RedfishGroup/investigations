@@ -4,7 +4,7 @@ function main(){
     // renderer setup
     const parent = document.querySelector('#threeDiv')
     const renderer = new THREE.WebGLRenderer()
-    const bbox =parent.getBoundingClientRect()
+    const bbox = parent.getBoundingClientRect()
     renderer.setSize(bbox.width, bbox.height)
 
     const canvas = renderer.domElement
@@ -19,7 +19,7 @@ function main(){
     camera.position.z = 2
     
     document.body.onresize = function(){
-        const bbox =parent.getBoundingClientRect()
+        const bbox = parent.getBoundingClientRect()
         renderer.setSize(bbox.width, bbox.height)
         const aspect = canvas.width/canvas.height
         camera.aspect = aspect
