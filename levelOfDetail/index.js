@@ -35,7 +35,10 @@ function main() {
   const boxHeight = 1;
   const boxDepth = 1;
   const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-  const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    wireframe: true,
+  });
   const cube = new THREE.Mesh(geometry, material);
   scene.add(cube);
   renderer.setClearColor("#000000");
