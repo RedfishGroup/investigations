@@ -1,5 +1,7 @@
 
 
+import { imageToImageData, latLngToSlippyXYZ } from "./utils"
+
 /**
  * Get Mapzen tiles for a slippy map tile as a float64array.
  * A description of the tile format can be found here: https://www.mapzen.com/blog/terrain-tile-service/
@@ -16,17 +18,18 @@ export async function getAndDecodeTerrariumElevationTile(x, y, z){
 }
 
 /**
- * Lat long to tile coordinates
+ * 
  * @param {*} lat 
  * @param {*} lng 
  * @param {*} z 
- * @returns 
+ * @returns Float64Array
  */
-export function latLngToSlippyXYZ(lat, lng, z){
-    const x = Math.floor((lng + 180) / 360 * Math.pow(2, z))
-    const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z))
-    return [x, y, z]
+export async function getAndDecodeMapzenElevationTileFromLatLng(lat, lng, z){
+    const [x, y, z] = latLngToSlippyXYZ(lat, lng, z)
+    const result = await getAndDecodeTerrariumElevationTile(x, y, z)
+    return result
 }
+
 
 /**
  * 
@@ -59,15 +62,6 @@ async function fetchTerrariumElevationTileImage(x, y, z){
         img.onload = () => resolve(img)
         img.onerror = () => reject(new Error('Failed to load image'))
     })
-}
-
-function imageToImageData(image){
-    const canvas = document.createElement('canvas')
-    canvas.width = image.width
-    canvas.height = image.height
-    const context = canvas.getContext('2d')
-    context.drawImage(image, 0, 0)
-    return context.getImageData(0, 0, image.width, image.height)
 }
 
 
