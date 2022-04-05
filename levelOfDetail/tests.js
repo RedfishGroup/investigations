@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { geometryFromMartiniMesh } from "./geometryUtils.js";
 import { getAndDecodeMapzenElevationTileFromLatLng } from "./mapzenTiles.js";
 import mapboxMartini from "https://cdn.skypack.dev/@mapbox/martini";
 
@@ -20,15 +21,23 @@ export async function testTerrain() {
 setTimeout(testTerrain, 1);
 
 export async function testMartiniTerrain() {
+  const center = {
+    Latitude: 35.19251772180017,
+    Longitude: -106.42811011436379,
+  };
+  const zoom = 12;
   const elevation = await getAndDecodeMapzenElevationTileFromLatLng(
-    35,
-    -106,
-    12
+    center.Latitude,
+    center.Longitude,
+    zoom
   );
   const elev257 = elevation.resample(257, 257);
   const rtin = new mapboxMartini(257);
   const tile = rtin.createTile(elev257.data);
   const mesh = tile.getMesh(1.2);
+
+  //const geometry = geometryFromMartiniMesh(mesh, elev257, center, zoom);
+
   const verticesXYZ = new Float32Array((mesh.vertices.length / 2) * 3);
   // combine elevation into vertices eg: [x,y,z,x,y,z,x,y,z,...] instead of [x,y,x,y,x,y,...]
   for (let i = 0; i < mesh.vertices.length; i += 2) {
