@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 import { ecef_lla, lla_ecef, a } from "./ECEF.js";
 
 export class GlobeReference {
@@ -7,7 +9,7 @@ export class GlobeReference {
     this.Elevation = options.Elevation || 0;
     this.zoom = options.zoom || 10;
 
-    this.scalingFactor = this.zoom / a;
+    this.scalingFactor = (100 * this.zoom) / a;
 
     this.object3D = new THREE.Object3D();
 
@@ -59,7 +61,7 @@ export class GlobeReference {
     let [x, y, z] = lla_ecef(lat, lon, elev);
 
     let center = new THREE.Vector3(x, y, z).multiplyScalar(this.scalingFactor);
-    center.applyEuler(this.rotation).multiplyScalar(-1);
+    center.applyEuler(this.object3D.rotation).multiplyScalar(-1);
 
     this.object3D.position.set(center.x, center.y, center.z);
 
@@ -73,6 +75,6 @@ export class GlobeReference {
   }
 
   getMatrix() {
-    return new THREE.Matrix4().clone(this.object3D.matrix);
+    return this.object3D.matrix.clone();
   }
 }

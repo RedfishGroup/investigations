@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 import { ecef_lla, lla_ecef } from "./ECEF.js";
 
-function geometryFromElevationTile(tile, bounds, matrix = new THREE.Matrix3()) {
+function geometryFromElevationTile(tile, bounds, matrix = new THREE.Matrix4()) {
   if (
     tile &&
     tile.length === 256 * 256 &&
@@ -68,10 +68,7 @@ export function geometryFromMartiniMesh(
   matrix = new THREE.Matrix3()
 ) {
   if (mesh && bounds) {
-    let north = bounds.maxLat;
-    let south = bounds.minLat;
-    let east = bounds.maxLng;
-    let west = bounds.minLng;
+    let { north, south, east, west } = bounds;
 
     let verticesXYZ = new Float32Array((mesh.vertices.length / 2) * 3);
 
@@ -88,7 +85,7 @@ export function geometryFromMartiniMesh(
       let lon = (mercY / dim) * (east - west) + west;
 
       let [x, y, z] = lla_ecef(lat, lon, elev);
-      let vec = new THREE.Vector3(x, y, z).applyMatrix3(matrix);
+      let vec = new THREE.Vector3(x, y, z).applyMatrix4(matrix);
 
       let index = 3 * (i / 2);
       verticesXYZ[index] = vec.x;

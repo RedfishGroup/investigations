@@ -30,7 +30,7 @@ export async function testMartiniTerrain() {
     Latitude: 35.19251772180017,
     Longitude: -106.42811011436379,
   };
-  const zoom = 12;
+  const zoom = 10;
   const xyz = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom);
   const elevation = await getAndDecodeTerrariumElevationTile(...xyz);
   const elev257 = elevation.resample(257, 257);
