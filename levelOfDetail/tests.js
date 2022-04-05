@@ -40,7 +40,7 @@ export async function testMartiniTerrain() {
     // TODO remove the scale factors, which were just for testing
     verticesXYZ[index] = x / 256;
     verticesXYZ[index + 1] = y / 256;
-    verticesXYZ[index + 2] = z / 256 - 7.3;
+    verticesXYZ[index + 2] = z / 10 / 256;
   }
   //   console.log({mesh, verticesXYZ});
   //
