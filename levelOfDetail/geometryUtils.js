@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { calculateBounds } from "./geoTools.js";
 
 import { ecef_lla, lla_ecef } from "./ECEF.js";
 
@@ -65,16 +64,19 @@ function geometryFromElevationTile(tile, bounds, matrix = new THREE.Matrix3()) {
 export function geometryFromMartiniMesh(
   mesh,
   tile,
-  center,
-  zoom,
+  bounds,
   matrix = new THREE.Matrix3()
 ) {
-  let bounds = calculateBounds({ zoom, center });
   if (mesh && bounds) {
+    let north = bounds.maxLat;
+    let south = bounds.minLat;
+    let east = bounds.maxLng;
+    let west = bounds.minLng;
+
     let verticesXYZ = new Float32Array((mesh.vertices.length / 2) * 3);
 
     // tiles are always square
-    let dim = tile.length / 2;
+    let dim = tile.width;
 
     for (let i = 0; i < mesh.vertices.length; i += 2) {
       let mercX = mesh.vertices[i];
@@ -82,8 +84,8 @@ export function geometryFromMartiniMesh(
 
       let elev = tile.sample(mercX, mercY);
 
-      let lat = (mercX / dim) * (bounds.north - bounds.south) + bounds.south;
-      let lon = (mercY / dim) * (bounds.east - bounds.west) + bounds.west;
+      let lat = (mercX / dim) * (north - south) + south;
+      let lon = (mercY / dim) * (east - west) + west;
 
       let [x, y, z] = lla_ecef(lat, lon, elev);
       let vec = new THREE.Vector3(x, y, z).applyMatrix3(matrix);
@@ -94,13 +96,13 @@ export function geometryFromMartiniMesh(
       verticesXYZ[index + 2] = vec.z;
     }
 
-    const geometry = new THREE.BufferGeometry();
+    let geometry = new THREE.BufferGeometry();
     geometry.setIndex(new THREE.BufferAttribute(mesh.triangles, 1));
     geometry.setAttribute(
       "position",
       new THREE.BufferAttribute(verticesXYZ, 3)
     );
 
-    return new THREE.BufferGeometry();
+    return geometry;
   }
 }

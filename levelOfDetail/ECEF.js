@@ -11,7 +11,7 @@
 ////////////////////////////////////////////////////////
 
 // in meters
-const a = 6378137.0;
+export const a = 6378137.0;
 const f = 1.0 / 298.257223563;
 const b = a * (1.0 - f);
 const e = Math.sqrt((a * a - b * b) / (a * a));
