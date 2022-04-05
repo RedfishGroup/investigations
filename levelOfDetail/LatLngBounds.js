@@ -8,42 +8,36 @@
 export class LatLngBounds {
   constructor(lat1, lng1, lat2, lng2) {
     if (lat1.constructor === LatLng) {
-      this.minLat = Math.min(lat1.lat, lng1.lat);
-      this.maxLat = Math.max(lat1.lat, lng1.lat);
-      this.minLng = Math.min(lat1.lng, lng1.lng);
-      this.maxLng = Math.max(lat1.lng, lng1.lng);
+      this.south = Math.min(lat1.lat, lng1.lat);
+      this.north = Math.max(lat1.lat, lng1.lat);
+      this.west = Math.min(lat1.lng, lng1.lng);
+      this.east = Math.max(lat1.lng, lng1.lng);
     } else {
-      this.minLat = Math.min(lat1, lat2);
-      this.minLng = Math.min(lng1, lng2);
-      this.maxLat = Math.max(lat1, lat2);
-      this.maxLng = Math.max(lng1, lng2);
+      this.south = Math.min(lat1, lat2);
+      this.west = Math.min(lng1, lng2);
+      this.north = Math.max(lat1, lat2);
+      this.east = Math.max(lng1, lng2);
     }
   }
   contains(lat, lng) {
     return (
-      lat >= this.minLat &&
-      lat <= this.maxLat &&
-      lng >= this.minLng &&
-      lng <= this.maxLng
+      lat >= this.south &&
+      lat <= this.north &&
+      lng >= this.west &&
+      lng <= this.east
     );
-  }
-  get south() {
-    return this.minLat;
-  }
-  get north() {
-    return this.maxLat;
-  }
-  get west() {
-    return this.minLng;
-  }
-  get east() {
-    return this.maxLng;
   }
   get center() {
     return new LatLng(
-      (this.minLat + this.maxLat) / 2,
-      (this.minLng + this.maxLng) / 2
+      (this.south + this.north) / 2,
+      (this.west + this.east) / 2
     );
+  }
+  get ll() {
+      return new LatLng(this.south, this.west)
+  }
+  get ur() {
+    return new LatLng(this.north, this.east);
   }
 }
 
