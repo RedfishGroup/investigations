@@ -1,4 +1,3 @@
-import * as THREE from "three";
 import { geometryFromMartiniMesh } from "./geometryUtils.js";
 import {
   getAndDecodeTerrariumElevationTile,
@@ -34,14 +33,6 @@ export async function testMartiniTerrain(x, y, z, matrix) {
   const bounds = getTileBounds(x, y, z);
   console.log("tile bounds", bounds);
 
-  const geometry = geometryFromMartiniMesh(mesh, elev257, bounds, matrix);
-
-  const material = new THREE.MeshBasicMaterial({
-    color: 0xffff00,
-    wireframe: true,
-  });
-  const terrainMesh = new THREE.Mesh(geometry, material);
-  //   console.log(terrainMesh);
-  return terrainMesh;
+  return geometryFromMartiniMesh(mesh, elev257, bounds, matrix);
 }
 setTimeout(testMartiniTerrain, 1);

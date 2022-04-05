@@ -84,13 +84,18 @@ function main() {
     zoom,
   });
 
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xffff00,
+    wireframe: true,
+  });
+
   for (let i = -2; i <= 2; i++) {
     for (let j = -2; j <= 2; j++) {
       // martini test function for meshing tile
       testMartiniTerrain(x + i, y + j, z, globeReference.getMatrix()).then(
-        (terrainMesh) => {
+        (terrainGeometry) => {
           // add martini terrain mesh
-          scene.add(terrainMesh);
+          scene.add(new THREE.Mesh(terrainGeometry, material));
         }
       );
     }
