@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import {getAndDecodeMapzenElevationTileFromLatLng} from "./elevationUtils.js"
+import {testMartiniTerrain} from './tests.js'
+
 function main() {
   // renderer setup
   const parent = document.querySelector("#threeDiv");
@@ -17,9 +18,9 @@ function main() {
   const fov = 75;
   const aspect = canvas.width / canvas.height;
   const near = 0.1;
-  const far = 5;
+  const far = 5000;
   const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-  camera.position.z = 2;
+  camera.position.z = 6;
 
   document.body.onresize = function () {
     const bbox = parent.getBoundingClientRect();
@@ -39,7 +40,7 @@ function main() {
     color: 0xffffff,
     wireframe: true,
   });
-  const cube = new THREE.Mesh(geometry, material);
+  let cube = new THREE.Mesh(geometry, material);
   scene.add(cube);
   renderer.setClearColor("#000000");
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -49,24 +50,12 @@ function main() {
     cube.rotation.y += 0.01;
     renderer.render(scene, camera);
   };
+  testMartiniTerrain().then(terrainMesh => {
+    scene.add(terrainMesh);
+    cube = terrainMesh
+  });
   animate();
 }
 
 main();
 
-
-
-
-//test
-async function testTerrain(){
-    const elevation = await getAndDecodeMapzenElevationTileFromLatLng(35,-106, 12)
-    if(elevation.length !== 256*256){
-        console.error("elevation array is not 256x256")
-    } else if(Math.round(elevation[4]) !== 1908){
-        console.error("elevation at 4,4 is not 1908")
-    } else {
-        console.log("test passed")
-    }
-}
-
-setTimeout(testTerrain, 1)

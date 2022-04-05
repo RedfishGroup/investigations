@@ -1,4 +1,7 @@
 import * as THREE from "three";
+import * as Martini from "https://unpkg.com/@mapbox/martini@0.2.0/martini.min.js";
+
+console.log("martini", Martini);
 
 function meshFromElevationTile(tile, bounds, matrix = new THREE.Matrix3()) {
   if (

@@ -1,6 +1,7 @@
 
 
 import { imageToImageData, latLngToSlippyXYZ } from "./utils.js"
+import DataSet from 'https://code.agentscript.org/src/DataSet.js'
 
 /**
  * Get Mapzen tiles for a slippy map tile as a float64array.
@@ -50,7 +51,7 @@ export function decodeTerrarium(imageData){
         const elevation = (r * 256 + g + b / 256) - 32768
         result[i] = elevation
     }
-    return result
+    return new DataSet(width, height,result)
 }
 
 async function fetchTerrariumElevationTileImage(x, y, z){
