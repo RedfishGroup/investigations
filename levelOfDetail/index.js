@@ -1,4 +1,7 @@
 import * as THREE from "three";
+
+import { OrbitControls } from "https://unpkg.com/three@0.139.2/examples/jsm/controls/OrbitControls.js";
+
 import { testMartiniTerrain } from "./tests.js";
 
 import { drawXYPlane, drawWorldAxes } from "./geoTools.js";
@@ -29,6 +32,12 @@ function main() {
   camera.updateMatrix();
   camera.updateProjectionMatrix();
   camera.lookAt(0, 0, 0);
+
+  // orbit controls setup
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enablePan = false;
+  controls.maxDistance = 10;
+  controls.maxPolarAngle = Math.PI / 2;
 
   // resize function for window
   document.body.onresize = function () {
@@ -69,10 +78,11 @@ function main() {
   // animation function
   const animate = function () {
     requestAnimationFrame(animate);
-    //cube.rotation.x += 0.01;
-    //cube.rotation.y += 0.01;
+
     cube.rotation.z += 0.01;
     box.copy(cube.geometry.boundingBox).applyMatrix4(cube.matrixWorld);
+
+    controls.update();
     renderer.render(scene, camera);
   };
 
@@ -87,11 +97,8 @@ function main() {
     // add martini terrain mesh
     scene.add(terrainMesh);
 
-    // compute bounding box and sphere
+    // compute bounding box
     terrainMesh.geometry.computeBoundingBox();
-    terrainMesh.geometry.computeBoundingSphere();
-    let center = terrainMesh.geometry.boundingSphere.center;
-    terrainMesh.position.set(-center.x, -center.y, -center.z);
 
     // set cube variable to new mesh for animating
     cube = terrainMesh;
