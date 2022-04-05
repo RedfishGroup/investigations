@@ -28,7 +28,7 @@ export async function testMartiniTerrain() {
   const elev257 = elevation.resample(257, 257);
   const rtin = new mapboxMartini(257);
   const tile = rtin.createTile(elev257.data);
-  const mesh = tile.getMesh(2);
+  const mesh = tile.getMesh(1.2);
   const verticesXYZ = new Float32Array((mesh.vertices.length / 2) * 3);
   // combine elevation into vertices eg: [x,y,z,x,y,z,x,y,z,...] instead of [x,y,x,y,x,y,...]
   for (let i = 0; i < mesh.vertices.length; i += 2) {
