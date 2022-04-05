@@ -42,17 +42,17 @@ export async function testMartiniTerrain() {
     verticesXYZ[index + 1] = y / 256;
     verticesXYZ[index + 2] = (z - 1890) / 100;
   }
-//   console.log({mesh, verticesXYZ});
+  //   console.log({mesh, verticesXYZ});
   //
   const geometry = new THREE.BufferGeometry();
-  geometry.setIndex(new THREE.BufferAttribute(mesh.triangles,1));
+  geometry.setIndex(new THREE.BufferAttribute(mesh.triangles, 1));
   geometry.setAttribute("position", new THREE.BufferAttribute(verticesXYZ, 3));
   const material = new THREE.MeshBasicMaterial({
     color: 0xffff00,
     wireframe: true,
   });
   const terrainMesh = new THREE.Mesh(geometry, material);
-//   console.log(terrainMesh);
+  //   console.log(terrainMesh);
   return terrainMesh;
 }
 setTimeout(testMartiniTerrain, 1);
