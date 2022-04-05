@@ -187,45 +187,22 @@ export function rotateQuaternionFromECEF(quaternion, terrain, lat, lon) {
   return q_;
 }
 
+export function drawXYPlane(scene, size = 10) {
+  if (scene) {
+    const grid = new THREE.GridHelper(size, size);
+    grid.rotation.x = Math.PI / 2;
+    grid.position.z = -0.0001;
+    scene.add(grid);
+  }
+}
+
 export function drawWorldAxes(scene, scale = 10) {
   if (scene) {
     // world axes
-    /*let geometryX = new THREE.BufferGeometry();
-    geometryX.setAttribute(
-      "position",
-      new THREE.BufferAttribute(new Float32Array([0, 0, 0, scale, 0, 0]), 3)
-    );
-    let geometryY = new THREE.BufferGeometry();
-    geometryY.setAttribute(
-      "position",
-      new THREE.BufferAttribute(new Float32Array([0, 0, 0, 0, scale, 0]), 3)
-    );
-    let geometryZ = new THREE.BufferGeometry();
-    geometryZ.setAttribute(
-      "position",
-      new THREE.BufferAttribute(new Float32Array([0, 0, 0, 0, 0, scale]), 3)
-    );
+    const axesHelper = new THREE.AxesHelper(scale);
+    scene.add(axesHelper);
 
-    scene.add(
-      new THREE.Line(
-        geometryX,
-        new THREE.LineBasicMaterial({ color: 0xff0000 })
-      )
-    );
-    scene.add(
-      new THREE.Line(
-        geometryY,
-        new THREE.LineBasicMaterial({ color: 0x00bb00 })
-      )
-    );
-    scene.add(
-      new THREE.Line(
-        geometryZ,
-        new THREE.LineBasicMaterial({ color: 0x0000ff })
-      )
-    );*/
-
-    scene.add(
+    /*scene.add(
       new THREE.ArrowHelper(
         new THREE.Vector3(1, 0, 0),
         new THREE.Vector3(),
@@ -251,7 +228,7 @@ export function drawWorldAxes(scene, scale = 10) {
         0x0000ff,
         0.05 * scale
       )
-    );
+    );*/
   }
 }
 

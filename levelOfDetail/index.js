@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { testMartiniTerrain } from "./tests.js";
 
-import { drawWorldAxes } from "./geoTools.js";
+import { drawXYPlane, drawWorldAxes } from "./geoTools.js";
 
 function main() {
   // renderer setup
@@ -63,6 +63,9 @@ function main() {
   // put in axes
   drawWorldAxes(scene, 2);
 
+  // put in x-y plane
+  drawXYPlane(scene);
+
   // animation function
   const animate = function () {
     requestAnimationFrame(animate);
@@ -75,10 +78,22 @@ function main() {
 
   // martini test function for meshing tile
   testMartiniTerrain().then((terrainMesh) => {
+    // clean up temporary mesh
     scene.remove(cube);
-    scene.add(terrainMesh);
+
+    // add bounding box mesh
     scene.add(new THREE.Box3Helper(box, 0xffffff));
+
+    // add martini terrain mesh
+    scene.add(terrainMesh);
+
+    // compute bounding box and sphere
     terrainMesh.geometry.computeBoundingBox();
+    terrainMesh.geometry.computeBoundingSphere();
+    let center = terrainMesh.geometry.boundingSphere.center;
+    terrainMesh.position.set(-center.x, -center.y, -center.z);
+
+    // set cube variable to new mesh for animating
     cube = terrainMesh;
   });
 
