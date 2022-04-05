@@ -22,7 +22,7 @@ function main() {
   parent.appendChild(canvas);
 
   // camera setup
-  const fov = 75;
+  const fov = 50;
   const aspect = canvas.width / canvas.height;
   const near = 0.1;
   const far = 5000;
