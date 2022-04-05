@@ -79,10 +79,10 @@ export function geometryFromMartiniMesh(
       let mercX = mesh.vertices[i];
       let mercY = mesh.vertices[i + 1];
 
-      let elev = tile.sample(mercX, mercY);
+      let elev = tile.sample(mercX, dim - mercY - 1);
 
-      let lat = (mercX / dim) * (north - south) + south;
-      let lon = (mercY / dim) * (east - west) + west;
+      let lon = (mercX / dim) * (east - west) + west;
+      let lat = (mercY / dim) * (north - south) + south;
 
       let [x, y, z] = lla_ecef(lat, lon, elev);
       let vec = new THREE.Vector3(x, y, z).applyMatrix4(matrix);

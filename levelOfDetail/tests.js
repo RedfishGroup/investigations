@@ -5,8 +5,7 @@ import {
   getAndDecodeMapzenElevationTileFromLatLng,
 } from "./mapzenTiles.js";
 import mapboxMartini from "https://cdn.skypack.dev/@mapbox/martini";
-import { getTileBounds, latLngToSlippyXYZ } from "./utils.js";
-import { GlobeReference } from "./GlobeReference.js";
+import { getTileBounds } from "./utils.js";
 
 //test
 export async function testTerrain() {
@@ -25,54 +24,18 @@ export async function testTerrain() {
 }
 setTimeout(testTerrain, 1);
 
-export async function testMartiniTerrain() {
-  const center = {
-    Latitude: 35.19251772180017,
-    Longitude: -106.42811011436379,
-  };
-  const zoom = 10;
-  const xyz = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom);
-  const elevation = await getAndDecodeTerrariumElevationTile(...xyz);
+export async function testMartiniTerrain(x, y, z, matrix) {
+  const elevation = await getAndDecodeTerrariumElevationTile(x, y, z);
   const elev257 = elevation.resample(257, 257);
   const rtin = new mapboxMartini(257);
   const tile = rtin.createTile(elev257.data);
   const mesh = tile.getMesh(1.2);
 
-  const bounds = getTileBounds(...xyz);
+  const bounds = getTileBounds(x, y, z);
   console.log("tile bounds", bounds);
 
-  const globeReference = new GlobeReference({
-    Latitude: bounds.center.lat,
-    Longitude: bounds.center.lng,
-    Elevation: elev257.sample(elev257.width / 2, elev257.height / 2),
-    zoom,
-  });
+  const geometry = geometryFromMartiniMesh(mesh, elev257, bounds, matrix);
 
-  const geometry = geometryFromMartiniMesh(
-    mesh,
-    elev257,
-    bounds,
-    globeReference.getMatrix()
-  );
-
-  /*const verticesXYZ = new Float32Array((mesh.vertices.length / 2) * 3);
-  // combine elevation into vertices eg: [x,y,z,x,y,z,x,y,z,...] instead of [x,y,x,y,x,y,...]
-  for (let i = 0; i < mesh.vertices.length; i += 2) {
-    const x = mesh.vertices[i];
-    const y = mesh.vertices[i + 1];
-    const z = elev257.sample(x, y);
-    const index = 3 * (i / 2);
-    // set xyz
-    // TODO remove the scale factors, which were just for testing
-    verticesXYZ[index] = x / 256;
-    verticesXYZ[index + 1] = y / 256;
-    verticesXYZ[index + 2] = z / 10 / 256;
-  }
-  //   console.log({mesh, verticesXYZ});
-  //
-  const geometry = new THREE.BufferGeometry();
-  geometry.setIndex(new THREE.BufferAttribute(mesh.triangles, 1));
-  geometry.setAttribute("position", new THREE.BufferAttribute(verticesXYZ, 3));*/
   const material = new THREE.MeshBasicMaterial({
     color: 0xffff00,
     wireframe: true,

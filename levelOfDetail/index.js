@@ -1,10 +1,12 @@
 import * as THREE from "three";
 
 import { OrbitControls } from "https://unpkg.com/three@0.139.2/examples/jsm/controls/OrbitControls.js";
+import { GlobeReference } from "./GlobeReference.js";
+import { drawXYPlane, drawWorldAxes } from "./geoTools.js";
 
 import { testMartiniTerrain } from "./tests.js";
 
-import { drawXYPlane, drawWorldAxes } from "./geoTools.js";
+import { getTileBounds, latLngToSlippyXYZ } from "./utils.js";
 
 function main() {
   // renderer setup
@@ -52,23 +54,6 @@ function main() {
   // create scene
   const scene = new THREE.Scene();
 
-  // create temp test mesh
-  const boxWidth = 1;
-  const boxHeight = 1;
-  const boxDepth = 1;
-  const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-  const material = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    wireframe: true,
-  });
-  let cube = new THREE.Mesh(geometry, material);
-  cube.geometry.computeBoundingBox();
-  window.cube = cube;
-  scene.add(cube);
-
-  // create bounding box mesh
-  const box = new THREE.Box3();
-
   // put in axes
   drawWorldAxes(scene, 2);
 
@@ -79,30 +64,37 @@ function main() {
   const animate = function () {
     requestAnimationFrame(animate);
 
-    cube.rotation.z += 0.01;
-    box.copy(cube.geometry.boundingBox).applyMatrix4(cube.matrixWorld);
-
     controls.update();
     renderer.render(scene, camera);
   };
 
-  // martini test function for meshing tile
-  testMartiniTerrain().then((terrainMesh) => {
-    // clean up temporary mesh
-    scene.remove(cube);
+  const center = {
+    Latitude: 35.19251772180017,
+    Longitude: -106.42811011436379,
+  };
+  const zoom = 12;
+  const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom);
 
-    // add bounding box mesh
-    scene.add(new THREE.Box3Helper(box, 0xffffff));
+  const bounds = getTileBounds(x, y, z);
 
-    // add martini terrain mesh
-    scene.add(terrainMesh);
-
-    // compute bounding box
-    terrainMesh.geometry.computeBoundingBox();
-
-    // set cube variable to new mesh for animating
-    cube = terrainMesh;
+  const globeReference = new GlobeReference({
+    Latitude: bounds.center.lat,
+    Longitude: bounds.center.lng,
+    Elevation: 0,
+    zoom,
   });
+
+  for (let i = -2; i <= 2; i++) {
+    for (let j = -2; j <= 2; j++) {
+      // martini test function for meshing tile
+      testMartiniTerrain(x + i, y + j, z, globeReference.getMatrix()).then(
+        (terrainMesh) => {
+          // add martini terrain mesh
+          scene.add(terrainMesh);
+        }
+      );
+    }
+  }
 
   // start animating
   animate();
