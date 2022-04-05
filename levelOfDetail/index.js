@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import {testMartiniTerrain} from './tests.js'
+import { testMartiniTerrain } from "./tests.js";
 
 function main() {
   // renderer setup
@@ -20,7 +20,11 @@ function main() {
   const near = 0.1;
   const far = 5000;
   const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-  camera.position.z = 6;
+  camera.position.set(2, 2, 1);
+  camera.up.set(0, 0, 1);
+  camera.updateMatrix();
+  camera.updateProjectionMatrix();
+  camera.lookAt(0, 0, 0);
 
   document.body.onresize = function () {
     const bbox = parent.getBoundingClientRect();
@@ -46,16 +50,17 @@ function main() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   const animate = function () {
     requestAnimationFrame(animate);
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
+    //cube.rotation.x += 0.01;
+    //cube.rotation.y += 0.01;
+    cube.rotation.z += 0.01;
     renderer.render(scene, camera);
   };
-  testMartiniTerrain().then(terrainMesh => {
+  testMartiniTerrain().then((terrainMesh) => {
+    scene.remove(cube);
     scene.add(terrainMesh);
-    cube = terrainMesh
+    cube = terrainMesh;
   });
   animate();
 }
 
 main();
-
