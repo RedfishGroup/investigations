@@ -53,8 +53,12 @@ function main() {
     wireframe: true,
   });
   let cube = new THREE.Mesh(geometry, material);
+  cube.geometry.computeBoundingBox();
   window.cube = cube;
   scene.add(cube);
+
+  // create bounding box mesh
+  const box = new THREE.Box3();
 
   // put in axes
   drawWorldAxes(scene, 2);
@@ -65,6 +69,7 @@ function main() {
     //cube.rotation.x += 0.01;
     //cube.rotation.y += 0.01;
     cube.rotation.z += 0.01;
+    box.copy(cube.geometry.boundingBox).applyMatrix4(cube.matrixWorld);
     renderer.render(scene, camera);
   };
 
@@ -72,6 +77,8 @@ function main() {
   testMartiniTerrain().then((terrainMesh) => {
     scene.remove(cube);
     scene.add(terrainMesh);
+    scene.add(new THREE.Box3Helper(box, 0xffffff));
+    terrainMesh.geometry.computeBoundingBox();
     cube = terrainMesh;
   });
 
