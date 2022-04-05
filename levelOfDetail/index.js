@@ -40,7 +40,7 @@ function main() {
     color: 0xffffff,
     wireframe: true,
   });
-  const cube = new THREE.Mesh(geometry, material);
+  let cube = new THREE.Mesh(geometry, material);
   scene.add(cube);
   renderer.setClearColor("#000000");
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -52,6 +52,7 @@ function main() {
   };
   testMartiniTerrain().then(terrainMesh => {
     scene.add(terrainMesh);
+    cube = terrainMesh
   });
   animate();
 }
