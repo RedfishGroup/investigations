@@ -23,16 +23,18 @@ export async function testTerrain() {
 }
 setTimeout(testTerrain, 1);
 
-export async function testMartiniTerrain(x, y, z, matrix) {
+export async function testMartiniTerrain(x, y, z, options = {}) {
   const elevation = await getAndDecodeTerrariumElevationTile(x, y, z);
   const elev257 = elevation.resample(257, 257);
   const rtin = new mapboxMartini(257);
   const tile = rtin.createTile(elev257.data);
-  const mesh = tile.getMesh(1.2);
+  const mesh = tile.getMesh(options.error || 0);
 
   const bounds = getTileBounds(x, y, z);
   console.log("tile bounds", bounds);
 
-  return geometryFromMartiniMesh(mesh, elev257, bounds, matrix);
+  let geometry = geometryFromMartiniMesh(mesh, elev257, bounds, options.matrix);
+  return { tile, bounds, geometry, elevation: elev257 };
 }
+
 setTimeout(testMartiniTerrain, 1);

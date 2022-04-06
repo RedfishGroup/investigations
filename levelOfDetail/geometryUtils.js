@@ -63,23 +63,51 @@ function geometryFromElevationTile(tile, bounds, matrix = new THREE.Matrix4()) {
 
 export function geometryFromMartiniMesh(
   mesh,
-  tile,
+  elevation,
+  bounds,
+  matrix = new THREE.Matrix3()
+) {
+  if (mesh && bounds) {
+    let maxPoints = elevation.width * elevation.height;
+
+    let geometry = new THREE.BufferGeometry();
+    geometry.dynamic = true;
+    geometry.setIndex(new THREE.BufferAttribute(mesh.triangles, 1));
+    geometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(
+        verticesFromMartiniMesh(mesh, elevation, bounds, matrix),
+        3
+      )
+    );
+    geometry.attributes.position.needsUpdate = true;
+
+    // compute normals
+    geometry.computeVertexNormals();
+
+    return geometry;
+  }
+}
+
+export function verticesFromMartiniMesh(
+  mesh,
+  elevation,
   bounds,
   matrix = new THREE.Matrix3()
 ) {
   if (mesh && bounds) {
     let { north, south, east, west } = bounds;
 
-    let verticesXYZ = new Float32Array((mesh.vertices.length / 2) * 3);
+    let vertices = new Float32Array((mesh.vertices.length / 2) * 3);
 
-    // tiles are always square
-    let dim = tile.width;
+    // elevation tiles are always square
+    let dim = elevation.width;
 
     for (let i = 0; i < mesh.vertices.length; i += 2) {
       let mercX = mesh.vertices[i];
       let mercY = mesh.vertices[i + 1];
 
-      let elev = tile.sample(mercX, dim - mercY - 1);
+      let elev = elevation.sample(mercX, dim - mercY - 1);
 
       let lon = (mercX / dim) * (east - west) + west;
       let lat = (mercY / dim) * (north - south) + south;
@@ -88,18 +116,11 @@ export function geometryFromMartiniMesh(
       let vec = new THREE.Vector3(x, y, z).applyMatrix4(matrix);
 
       let index = 3 * (i / 2);
-      verticesXYZ[index] = vec.x;
-      verticesXYZ[index + 1] = vec.y;
-      verticesXYZ[index + 2] = vec.z;
+      vertices[index] = vec.x;
+      vertices[index + 1] = vec.y;
+      vertices[index + 2] = vec.z;
     }
 
-    let geometry = new THREE.BufferGeometry();
-    geometry.setIndex(new THREE.BufferAttribute(mesh.triangles, 1));
-    geometry.setAttribute(
-      "position",
-      new THREE.BufferAttribute(verticesXYZ, 3)
-    );
-
-    return geometry;
+    return vertices;
   }
 }

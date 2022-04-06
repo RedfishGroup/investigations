@@ -1,12 +1,17 @@
 import * as THREE from "three";
 
+import { GUI } from "https://unpkg.com/dat.gui@0.7.7/build/dat.gui.module.js";
 import { OrbitControls } from "https://unpkg.com/three@0.139.2/examples/jsm/controls/OrbitControls.js";
 import { GlobeReference } from "./GlobeReference.js";
 import { drawXYPlane, drawWorldAxes } from "./geoTools.js";
 
 import { testMartiniTerrain } from "./tests.js";
 
+import { verticesFromMartiniMesh } from "./geometryUtils.js";
+
 import { getTileBounds, latLngToSlippyXYZ } from "./utils.js";
+
+console.log(GUI);
 
 function main() {
   // renderer setup
@@ -26,7 +31,7 @@ function main() {
   // camera setup
   const fov = 50;
   const aspect = canvas.width / canvas.height;
-  const near = 0.1;
+  const near = 0.01;
   const far = 5000;
   const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
   camera.position.set(2, 2, 1.5);
@@ -84,22 +89,64 @@ function main() {
     zoom,
   });
 
-  const material = new THREE.MeshBasicMaterial({
-    color: 0xffff00,
-    wireframe: true,
-  });
+  let martiniParams = { error: 0 };
 
+  let materialParams = {
+    side: THREE.BackSide,
+    wireframe: true,
+  };
+  const material = new THREE.MeshNormalMaterial(materialParams);
+
+  const results = [];
   for (let i = -2; i <= 2; i++) {
     for (let j = -2; j <= 2; j++) {
       // martini test function for meshing tile
-      testMartiniTerrain(x + i, y + j, z, globeReference.getMatrix()).then(
-        (terrainGeometry) => {
-          // add martini terrain mesh
-          scene.add(new THREE.Mesh(terrainGeometry, material));
-        }
-      );
+      testMartiniTerrain(x + i, y + j, z, {
+        error: martiniParams.error,
+        matrix: globeReference.getMatrix(),
+      }).then((result) => {
+        // add martini terrain mesh
+        results.push(result);
+        scene.add(new THREE.Mesh(result.geometry, material));
+      });
     }
   }
+
+  // dat.gui menu setup
+  const gui = new GUI();
+  const materialGUI = gui.addFolder("Material");
+  materialGUI.open();
+  materialGUI.add(materialParams, "wireframe").onChange((bool) => {
+    material.wireframe = bool;
+    material.needsUpdate = true;
+  });
+  const martiniGUI = gui.addFolder("Martini");
+  martiniGUI.open();
+  martiniGUI.add(martiniParams, "error", 0, 100, 1).onChange(() => {
+    for (let i in results) {
+      // calculate new mesh
+      let mesh = results[i].tile.getMesh(martiniParams.error);
+
+      // set position
+      let vertices = verticesFromMartiniMesh(
+        mesh,
+        results[i].elevation,
+        results[i].bounds,
+        globeReference.getMatrix()
+      );
+      results[i].geometry.attributes.position.array = vertices;
+      results[i].geometry.attributes.position.needsUpdate = true;
+
+      // set indices
+      results[i].geometry.index.array = mesh.triangles;
+      results[i].geometry.index.needsUpdate = true;
+
+      // set draw range
+      results[i].geometry.setDrawRange(0, mesh.triangles.length);
+
+      //results[i].geometry.computeVertexNormals();
+    }
+  });
 
   // start animating
   animate();
