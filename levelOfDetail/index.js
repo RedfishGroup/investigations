@@ -9,7 +9,9 @@ import { testMartiniTerrain } from "./tests.js";
 
 import { verticesFromMartiniMesh } from "./geometryUtils.js";
 
-import { getTileBounds, latLngToSlippyXYZ } from "./utils.js";
+import { getTileBounds, latLngToSlippyXYZ, splitTileCoordinates } from "./utils.js";
+
+import {geometryFromMartiniMesh} from "./geometryUtils.js";
 
 console.log(GUI);
 
@@ -77,7 +79,7 @@ function main() {
     Latitude: 35.19251772180017,
     Longitude: -106.42811011436379,
   };
-  const zoom = 12;
+  const zoom = 10;
   const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom);
 
   const bounds = getTileBounds(x, y, z);
@@ -97,7 +99,8 @@ function main() {
   };
   const material = new THREE.MeshNormalMaterial(materialParams);
 
-  const results = [];
+  const tileMeshes = [];
+  console.log(tileMeshes)
   for (let i = -2; i <= 2; i++) {
     for (let j = -2; j <= 2; j++) {
       // martini test function for meshing tile
@@ -106,8 +109,9 @@ function main() {
         matrix: globeReference.getMatrix(),
       }).then((result) => {
         // add martini terrain mesh
-        results.push(result);
-        scene.add(new THREE.Mesh(result.geometry, material));
+        tileMeshes.push(result);
+        result.threeMeshObject = new THREE.Mesh(result.geometry, material)
+        scene.add(result.threeMeshObject);
       });
     }
   }
@@ -122,34 +126,41 @@ function main() {
   });
   const martiniGUI = gui.addFolder("Martini");
   martiniGUI.open();
-  martiniGUI.add(martiniParams, "error", 0, 100, 1).onChange(() => {
-    for (let i in results) {
+  martiniGUI.add(martiniParams, "error", 0, 20, 0.5).onChange(() => {
+    for (let i in tileMeshes) {
       // calculate new mesh
-      let mesh = results[i].tile.getMesh(martiniParams.error);
+      let mesh = tileMeshes[i].tile.getMesh(martiniParams.error);
 
       // set position
       let vertices = verticesFromMartiniMesh(
         mesh,
-        results[i].elevation,
-        results[i].bounds,
+        tileMeshes[i].elevation,
+        tileMeshes[i].bounds,
         globeReference.getMatrix()
       );
-      results[i].geometry.attributes.position.array = vertices;
-      results[i].geometry.attributes.position.needsUpdate = true;
-
-      // set indices
-      results[i].geometry.index.array = mesh.triangles;
-      results[i].geometry.index.needsUpdate = true;
-
-      // set draw range
-      results[i].geometry.setDrawRange(0, mesh.triangles.length);
-
-      //results[i].geometry.computeVertexNormals();
+      let geometry = geometryFromMartiniMesh(mesh, tileMeshes[i].elevation, tileMeshes[i].bounds, globeReference.getMatrix());
+      scene.remove(tileMeshes[i].threeMeshObject);
+      tileMeshes[i].threeMeshObject = new THREE.Mesh(geometry, material);
+      scene.add(tileMeshes[i].threeMeshObject);
     }
   });
 
   // start animating
   animate();
 }
+
+async function splitTile(x,y,z, martiniError, homeMatrix){
+  const coords = splitTileCoordinates(x,y,z)
+  const promises = coords.map(coord => {
+    return testMartiniTerrain(coord.x, coord.y, coord.z, {
+      error: martiniError,
+      matrix: homeMatrix,
+    })
+  })
+  const results = await Promise.all(promises)
+  return results
+}
+
+
 
 main();

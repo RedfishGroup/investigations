@@ -40,3 +40,8 @@ export function getTileBounds(x, y, z) {
   const [lat2, lng2] = slippyXYZToLatLng(x + 1, y + 1, z);
   return new LatLngBounds(lat1, lng1, lat2, lng2);
 }
+
+export function splitTileCoordinates(x,y,z) {
+    const tileCoords = [{x:2*x, y:2*y, z:z+1}, {x:2*x+1, y:2*y, z:z+1}, {x:2*x, y:2*y+1, z:z+1}, {x:2*x+1, y:2*y+1, z:z+1}];
+    return tileCoords;
+  }
