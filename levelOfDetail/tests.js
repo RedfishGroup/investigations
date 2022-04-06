@@ -34,7 +34,7 @@ export async function testMartiniTerrain(x, y, z, options = {}) {
   console.log("tile bounds", bounds);
 
   let geometry = geometryFromMartiniMesh(mesh, elev257, bounds, options.matrix);
-  return { tile, bounds, geometry, elevation: elev257 };
+  return { tile, bounds, geometry, elevation: elev257, tileCoords : { x,y,z }};
 }
 
 setTimeout(testMartiniTerrain, 1);
