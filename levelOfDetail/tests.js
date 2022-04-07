@@ -37,4 +37,4 @@ export async function testMartiniTerrain(x, y, z, options = {}) {
   return { tile, bounds, geometry, elevation: elev257, tileCoords : { x,y,z }};
 }
 
-setTimeout(testMartiniTerrain, 1);
+// setTimeout(testMartiniTerrain, 1);
