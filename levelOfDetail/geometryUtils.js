@@ -68,25 +68,30 @@ export function geometryFromMartiniMesh(
   matrix = new THREE.Matrix3()
 ) {
   if (mesh && bounds) {
-    let maxPoints = elevation.width * elevation.height;
+    let maxPoints = elevation.width * elevation.height * 3 * 3;
 
     let geometry = new THREE.BufferGeometry();
-    geometry.dynamic = true;
-    geometry.setIndex(new THREE.BufferAttribute(mesh.triangles, 1));
+    geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(maxPoints), 1));
     geometry.setAttribute(
       "position",
-      new THREE.BufferAttribute(
-        verticesFromMartiniMesh(mesh, elevation, bounds, matrix),
-        3
-      )
+      new THREE.BufferAttribute(new Float32Array(maxPoints * 3), 3)
     );
-    geometry.attributes.position.needsUpdate = true;
 
-    // compute normals
-    geometry.computeVertexNormals();
+    updateGeometry(geometry, mesh, elevation, bounds, matrix);
+
+    //geometry.computeVertexNormals();
 
     return geometry;
   }
+}
+
+export function updateGeometry(geometry, mesh, elevation, bounds, matrix) {
+  setIndex(geometry, mesh.triangles);
+  setPosition(
+    geometry,
+    verticesFromMartiniMesh(mesh, elevation, bounds, matrix)
+  );
+  geometry.setDrawRange(0, mesh.triangles.length);
 }
 
 export function verticesFromMartiniMesh(
@@ -123,4 +128,25 @@ export function verticesFromMartiniMesh(
 
     return vertices;
   }
+}
+
+function setIndex(geometry, indices) {
+  // update indices
+  for (let j = 0; j < indices.length; j++) {
+    geometry.index.setX(j, indices[j]);
+  }
+  geometry.index.needsUpdate = true;
+}
+
+function setPosition(geometry, vertices) {
+  // update positions
+  for (let j = 0; j < vertices.length; j += 3) {
+    geometry.attributes.position.setXYZ(
+      j / 3,
+      vertices[j + 0],
+      vertices[j + 1],
+      vertices[j + 2]
+    );
+  }
+  geometry.attributes.position.needsUpdate = true;
 }

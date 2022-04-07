@@ -9,7 +9,7 @@ import { debounced } from "./debounced.js";
 
 import { testMartiniTerrain } from "./tests.js";
 
-import { geometryFromMartiniMesh } from "./geometryUtils.js";
+import { updateGeometry } from "./geometryUtils.js";
 
 import {
   getTileBounds,
@@ -95,13 +95,15 @@ function main() {
     zoom,
   });
 
-  let martiniParams = { error: 0 };
+  let martiniParams = { error: 10 };
 
   let materialParams = {
     side: THREE.BackSide,
+    color: 0xffff00,
     wireframe: true,
   };
-  const material = new THREE.MeshNormalMaterial(materialParams);
+  //const material = new THREE.MeshNormalMaterial(materialParams);
+  const material = new THREE.MeshBasicMaterial(materialParams);
 
   const tileMeshes = [];
   console.log(tileMeshes);
@@ -114,6 +116,9 @@ function main() {
       }).then((result) => {
         // add martini terrain mesh
         tileMeshes.push(result);
+        result.computeVertexNormals = debounced(() => {
+          result.geometry.computeVertexNormals();
+        }, 500);
         result.threeMeshObject = new THREE.Mesh(result.geometry, material);
         scene.add(result.threeMeshObject);
       });
@@ -128,10 +133,14 @@ function main() {
     material.wireframe = bool;
     material.needsUpdate = true;
   });
+  materialGUI.addColor(materialParams, "color").onChange((color) => {
+    material.color = new THREE.Color(color);
+    material.needsUpdate = true;
+  });
   const martiniGUI = gui.addFolder("Martini");
   martiniGUI.open();
   martiniGUI.add(martiniParams, "error", 0, 20, 0.5).onChange((error) => {
-    updateMeshes(error, scene, material, tileMeshes, globeReference);
+    updateMeshes(error, tileMeshes, globeReference);
   });
 
   // start animating
@@ -150,25 +159,19 @@ async function splitTile(x, y, z, martiniError, homeMatrix) {
   return results;
 }
 
-const updateMeshes = debounced(
-  async (error, scene, material, tileMeshes, globeReference) => {
-    for (let i in tileMeshes) {
-      // calculate new mesh
-      let mesh = tileMeshes[i].tile.getMesh(error);
+const updateMeshes = debounced(async (error, tileMeshes, globeReference) => {
+  for (let i in tileMeshes) {
+    // calculate new mesh
+    let mesh = tileMeshes[i].tile.getMesh(error);
 
-      // set position
-      let geometry = geometryFromMartiniMesh(
-        mesh,
-        tileMeshes[i].elevation,
-        tileMeshes[i].bounds,
-        globeReference.getMatrix()
-      );
-      scene.remove(tileMeshes[i].threeMeshObject);
-      tileMeshes[i].threeMeshObject = new THREE.Mesh(geometry, material);
-      scene.add(tileMeshes[i].threeMeshObject);
-    }
-  },
-  200
-);
+    updateGeometry(
+      tileMeshes[i].geometry,
+      mesh,
+      tileMeshes[i].elevation,
+      tileMeshes[i].bounds,
+      globeReference.getMatrix()
+    );
+  }
+}, 200);
 
 main();
