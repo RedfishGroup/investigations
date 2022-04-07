@@ -104,8 +104,11 @@ async function main() {
   const material = new THREE.MeshNormalMaterial(materialParams);
 
   const tileTree = new XYZTileNode(x, y, z, null);
-  const threeMesh = await tileTree.getMesh(martiniParams.error, globeReference.getMatrix(), material);
-  scene.add(threeMesh);
+  tileTree.split()
+  for (let node of tileTree.getLeafNodes()){
+    const threeMesh = await node.getMesh(martiniParams.error, globeReference.getMatrix(), material);
+    scene.add(threeMesh);
+  }
 
   // dat.gui menu setup
   const gui = new GUI();

@@ -140,15 +140,19 @@ export class XYZTileNode {
     }
 
     createChildren() {
-        const coords = splitTileCoordinates(x, y, z)
+        const coords = splitTileCoordinates(this.x, this.y, this.z)
         this.children = coords.map(a=>{
             return new XYZTileNode(a.x, a.y, a.z, this)
         })
         return this.children
     }
 
+    split() {
+        return this.getChildren()
+    }
+
     getChildren() {
-        if (!this.children) {
+        if (this.children.length === 0) {
             this.createChildren()
         }
         return this.children
