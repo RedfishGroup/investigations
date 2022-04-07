@@ -101,15 +101,12 @@ async function main() {
     const material = new THREE.MeshNormalMaterial(materialParams)
 
     const tileTree = new XYZTileNode(x, y, z, null)
-    tileTree.split()
-    for (let node of tileTree.getLeafNodes()) {
-        const threeMesh = await node.getMesh(
-            martiniParams.error,
-            globeReference.getMatrix(),
-            material
-        )
-        scene.add(threeMesh)
-    }
+    const threeMesh = await tileTree.getMesh(
+        martiniParams.error,
+        globeReference.getMatrix(),
+        material
+    )
+    scene.add(threeMesh)
 
     // dat.gui menu setup
     const gui = new GUI()
@@ -127,9 +124,15 @@ async function main() {
     gui.add(
         {
             add: (foo) => {
-              tileTree.getLeafNodes().forEach(node => {
-                splitNode(node, scene, martiniParams.error, globeReference, material)
-              })
+                tileTree.getLeafNodes().forEach((node) => {
+                    splitNode(
+                        node,
+                        scene,
+                        martiniParams.error,
+                        globeReference,
+                        material
+                    )
+                })
             },
         },
         'add'
@@ -139,7 +142,7 @@ async function main() {
     animate()
 }
 
-async function splitNode(node, scene , martiniError, globeReference, material) {
+async function splitNode(node, scene, martiniError, globeReference, material) {
     if (node.mesh) {
         scene.remove(node.mesh)
     }
