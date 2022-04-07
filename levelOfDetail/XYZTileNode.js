@@ -47,7 +47,7 @@ export class XYZTileNode {
         }
     }
 
-    createChildren() {
+    _createChildren() {
         const parent = this.getParent()
         const children = []
         for (let i = 0; i < 4; i++) {
@@ -139,7 +139,7 @@ export class XYZTileNode {
         }
     }
 
-    createChildren() {
+    _createChildren() {
         const coords = splitTileCoordinates(this.x, this.y, this.z)
         this.children = coords.map(a=>{
             return new XYZTileNode(a.x, a.y, a.z, this)
@@ -153,7 +153,7 @@ export class XYZTileNode {
 
     getChildren() {
         if (this.children.length === 0) {
-            this.createChildren()
+            this._createChildren()
         }
         return this.children
     }
@@ -162,15 +162,3 @@ export class XYZTileNode {
         return `${this.x},${this.y},${this.z}`
     }
 }
-
-// async function splitTile(x, y, z, martiniError, homeMatrix) {
-//     const coords = splitTileCoordinates(x, y, z)
-//     const promises = coords.map((coord) => {
-//         return testMartiniTerrain(coord.x, coord.y, coord.z, {
-//             error: martiniError,
-//             matrix: homeMatrix,
-//         })
-//     })
-//     const results = await Promise.all(promises)
-//     return results
-// }
