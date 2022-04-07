@@ -1,4 +1,4 @@
-import { LatLngBounds } from "./LatLngBounds.js";
+import { LatLngBounds } from './LatLngBounds.js'
 
 /**
  *
@@ -6,12 +6,12 @@ import { LatLngBounds } from "./LatLngBounds.js";
  * @returns ImageData
  */
 export function imageToImageData(image) {
-  const canvas = document.createElement("canvas");
-  canvas.width = image.width;
-  canvas.height = image.height;
-  const context = canvas.getContext("2d");
-  context.drawImage(image, 0, 0);
-  return context.getImageData(0, 0, image.width, image.height);
+    const canvas = document.createElement('canvas')
+    canvas.width = image.width
+    canvas.height = image.height
+    const context = canvas.getContext('2d')
+    context.drawImage(image, 0, 0)
+    return context.getImageData(0, 0, image.width, image.height)
 }
 
 /**
@@ -29,19 +29,24 @@ export function latLngToSlippyXYZ(lat, lng, z){
 }
 
 export function slippyXYZToLatLng(x, y, z) {
-  const lng = (x / Math.pow(2, z)) * 360 - 180;
-  const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z);
-  const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
-  return [lat, lng];
+    const lng = (x / Math.pow(2, z)) * 360 - 180
+    const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z)
+    const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)))
+    return [lat, lng]
 }
 
 export function getTileBounds(x, y, z) {
-  const [lat1, lng1] = slippyXYZToLatLng(x, y, z);
-  const [lat2, lng2] = slippyXYZToLatLng(x + 1, y + 1, z);
-  return new LatLngBounds(lat1, lng1, lat2, lng2);
+    const [lat1, lng1] = slippyXYZToLatLng(x, y, z)
+    const [lat2, lng2] = slippyXYZToLatLng(x + 1, y + 1, z)
+    return new LatLngBounds(lat1, lng1, lat2, lng2)
 }
 
-export function splitTileCoordinates(x,y,z) {
-    const tileCoords = [{x:2*x, y:2*y, z:z+1}, {x:2*x+1, y:2*y, z:z+1}, {x:2*x, y:2*y+1, z:z+1}, {x:2*x+1, y:2*y+1, z:z+1}];
-    return tileCoords;
-  }
+export function splitTileCoordinates(x, y, z) {
+    const tileCoords = [
+        { x: 2 * x, y: 2 * y, z: z + 1 },
+        { x: 2 * x + 1, y: 2 * y, z: z + 1 },
+        { x: 2 * x, y: 2 * y + 1, z: z + 1 },
+        { x: 2 * x + 1, y: 2 * y + 1, z: z + 1 },
+    ]
+    return tileCoords
+}

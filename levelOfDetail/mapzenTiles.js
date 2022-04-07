@@ -1,60 +1,57 @@
-
-
-import { imageToImageData, latLngToSlippyXYZ } from "./utils.js"
+import { imageToImageData, latLngToSlippyXYZ } from './utils.js'
 import DataSet from 'https://code.agentscript.org/src/DataSet.js'
 
 /**
  * Get Mapzen tiles for a slippy map tile as a float64array.
  * A description of the tile format can be found here: https://www.mapzen.com/blog/terrain-tile-service/
- * 
- * @param {*} x 
- * @param {*} y 
- * @param {*} z 
+ *
+ * @param {*} x
+ * @param {*} y
+ * @param {*} z
  * @returns Float64Array
  */
-export async function getAndDecodeTerrariumElevationTile(x, y, z){
+export async function getAndDecodeTerrariumElevationTile(x, y, z) {
     const image = await fetchTerrariumElevationTileImage(x, y, z)
     const imageData = imageToImageData(image)
     return decodeTerrarium(imageData)
 }
 
 /**
- * 
- * @param {*} lat 
- * @param {*} lng 
- * @param {*} z 
+ *
+ * @param {*} lat
+ * @param {*} lng
+ * @param {*} z
  * @returns Float64Array
  */
-export async function getAndDecodeMapzenElevationTileFromLatLng(lat, lng, z){
+export async function getAndDecodeMapzenElevationTileFromLatLng(lat, lng, z) {
     const [x, y, zz] = latLngToSlippyXYZ(lat, lng, z)
     const result = await getAndDecodeTerrariumElevationTile(x, y, zz)
     return result
 }
 
-
 /**
- * 
- * @param {ImageData} imageData 
+ *
+ * @param {ImageData} imageData
  * @returns Float64Array
  */
-export function decodeTerrarium(imageData){
+export function decodeTerrarium(imageData) {
     const data = imageData.data
     const width = imageData.width
     const height = imageData.height
     const result = new Float64Array(width * height)
-    for(let i = 0; i < result.length; i ++){
-        const i4 = 4*i
+    for (let i = 0; i < result.length; i++) {
+        const i4 = 4 * i
         const r = data[i4]
-        const g = data[i4+1]
-        const b = data[i4+2]
-        const a = data[i4+3]
-        const elevation = (r * 256 + g + b / 256) - 32768
+        const g = data[i4 + 1]
+        const b = data[i4 + 2]
+        const a = data[i4 + 3]
+        const elevation = r * 256 + g + b / 256 - 32768
         result[i] = elevation
     }
-    return new DataSet(width, height,result)
+    return new DataSet(width, height, result)
 }
 
-async function fetchTerrariumElevationTileImage(x, y, z){
+async function fetchTerrariumElevationTileImage(x, y, z) {
     const url = `https://elevation-tiles-prod.s3.amazonaws.com/terrarium/${z}/${x}/${y}.png`
     const img = new Image()
     img.crossOrigin = 'anonymous'
@@ -64,6 +61,3 @@ async function fetchTerrariumElevationTileImage(x, y, z){
         img.onerror = () => reject(new Error('Failed to load image'))
     })
 }
-
-
-
