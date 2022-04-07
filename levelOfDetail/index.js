@@ -116,9 +116,6 @@ function main() {
             }).then((result) => {
                 // add martini terrain mesh
                 tileMeshes.push(result)
-                result.computeVertexNormals = debounced(() => {
-                    result.geometry.computeVertexNormals()
-                }, 500)
                 result.threeMeshObject = new THREE.Mesh(
                     result.geometry,
                     material

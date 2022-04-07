@@ -81,8 +81,6 @@ export function geometryFromMartiniMesh(
 
         updateGeometry(geometry, mesh, elevation, bounds, matrix)
 
-        geometry.computeVertexNormals()
-
         return geometry
     }
 }
