@@ -1,8 +1,8 @@
 import { splitTileCoordinates, getTileBounds } from './utils.js'
-import mapboxMartini from "https://cdn.skypack.dev/@mapbox/martini";
-import { getAndDecodeTerrariumElevationTile } from './mapzenTiles.js';
-import { geometryFromMartiniMesh } from './geometryUtils.js';
-import * as THREE from "three";
+import mapboxMartini from 'https://cdn.skypack.dev/@mapbox/martini'
+import { getAndDecodeTerrariumElevationTile } from './mapzenTiles.js'
+import { geometryFromMartiniMesh } from './geometryUtils.js'
+import * as THREE from 'three'
 
 /**
  *
@@ -22,6 +22,7 @@ import * as THREE from "three";
 
 export class XYZTileNode {
     constructor(x, y, z, parent) {
+        this.MAX_ZOOM = 16 // The maximum zoom level for the tiles
         this.x = x
         this.y = y
         this.z = z
@@ -48,23 +49,27 @@ export class XYZTileNode {
     }
 
     _createChildren() {
-        const parent = this.getParent()
-        const children = []
-        for (let i = 0; i < 4; i++) {
-            const child = new XYZTileNode(
-                this.x * 2 + (i % 2),
-                this.y * 2 + Math.floor(i / 2),
-                this.z + 1,
-                parent
-            )
-            children.push(child)
+        // do not create children if we are at the max zoom
+        if (this.z >= this.MAX_ZOOM) {
+            return this.children
         }
+        // create the four child nodes
+        const children = splitTileCoordinates(this.x, this.y, this.z).map(
+            (c) => {
+                return new XYZTileNode(c.x, c.y, c.z, this)
+            }
+        )
         this.children = children
+        return children
     }
 
     async getElevation() {
         if (!this.elevation) {
-            const elevation = await getAndDecodeTerrariumElevationTile(this.x, this.y, this.z)
+            const elevation = await getAndDecodeTerrariumElevationTile(
+                this.x,
+                this.y,
+                this.z
+            )
             const elev257 = await elevation.resample(257, 257)
             this.elevation = elev257
         }
@@ -76,34 +81,28 @@ export class XYZTileNode {
         return bounds
     }
 
-
-     needsUpdate(martiniError) {
+    needsUpdate(martiniError) {
         if (this._lastMArtiniError !== martiniError) {
             this._lastMArtiniError = martiniError
             return true
         }
-        if(!this.mesh) {
+        if (!this.mesh) {
             return true
         }
         return false
     }
 
     async getGeometry(martiniError, homeMatrix) {
-            console.log('needs update', this.toString())
-            const bounds = this.getBounds()
-            console.log('tile bounds', bounds)
-            const rtin = new mapboxMartini(257)
-            const elev = await this.getElevation()
-            const tile = rtin.createTile(elev.data)
-            const mesh = tile.getMesh(martiniError || 0.1)
+        console.log('needs update', this.toString())
+        const bounds = this.getBounds()
+        console.log('tile bounds', bounds)
+        const rtin = new mapboxMartini(257)
+        const elev = await this.getElevation()
+        const tile = rtin.createTile(elev.data)
+        const mesh = tile.getMesh(martiniError || 0.1)
 
-            let geometry = geometryFromMartiniMesh(
-                mesh,
-                elev,
-                bounds,
-                homeMatrix
-            )
-            return geometry
+        let geometry = geometryFromMartiniMesh(mesh, elev, bounds, homeMatrix)
+        return geometry
     }
 
     async getMesh(martiniError, homeMatrix, material) {
@@ -120,7 +119,7 @@ export class XYZTileNode {
             return [this]
         } else {
             const leafNodes = []
-            this.children.forEach(child => {
+            this.children.forEach((child) => {
                 leafNodes.push(...child.getLeafNodes())
             })
             return leafNodes
@@ -130,21 +129,22 @@ export class XYZTileNode {
     getNonLeafNodes() {
         if (this.children.length === 0) {
             return []
-        } else {  
-            const nonLeafNodes = [this]  
-            this.children.forEach(child => {
+        } else {
+            const nonLeafNodes = [this]
+            this.children.forEach((child) => {
                 nonLeafNodes.push(...child.getNonLeafNodes())
             })
             return nonLeafNodes
         }
     }
 
-    _createChildren() {
-        const coords = splitTileCoordinates(this.x, this.y, this.z)
-        this.children = coords.map(a=>{
-            return new XYZTileNode(a.x, a.y, a.z, this)
+    getAllNodesBelow() {
+        const nodes = [this]
+        this.children.forEach((child) => {
+            nodes.push(...child.getAllNodesBelow())
         })
-        return this.children
+
+        return nodes
     }
 
     split() {
@@ -159,6 +159,10 @@ export class XYZTileNode {
     }
 
     toString() {
-        return `${this.x},${this.y},${this.z}`
+        const allNodes = this.getAllNodesBelow()
+        const nodeStrings = allNodes.map((node) => {
+            return `[x:${node.x},y:${node.y},z:${node.z}]`
+        })
+        return nodeStrings.join(', ')
     }
 }
