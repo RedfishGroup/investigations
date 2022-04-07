@@ -15,10 +15,11 @@ import {
   getTileBounds,
   latLngToSlippyXYZ,
 } from "./utils.js";
+import { XYZTileNode } from "./XYZTileNode.js";
 
 console.log(GUI);
 
-function main() {
+async function main() {
   // renderer setup
   const parent = document.querySelector("#threeDiv");
   const renderer = new THREE.WebGLRenderer();
@@ -82,7 +83,7 @@ function main() {
     Latitude: 35.19251772180017,
     Longitude: -106.42811011436379,
   };
-  const zoom = 10;
+  const zoom = 9;
   const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom);
 
   const bounds = getTileBounds(x, y, z);
@@ -102,22 +103,9 @@ function main() {
   };
   const material = new THREE.MeshNormalMaterial(materialParams);
 
-  const tileMeshes = [];
-  console.log(tileMeshes);
-  for (let i = -2; i <= 2; i++) {
-    for (let j = -2; j <= 2; j++) {
-      // martini test function for meshing tile
-      testMartiniTerrain(x + i, y + j, z, {
-        error: martiniParams.error,
-        matrix: globeReference.getMatrix(),
-      }).then((result) => {
-        // add martini terrain mesh
-        tileMeshes.push(result);
-        result.threeMeshObject = new THREE.Mesh(result.geometry, material);
-        scene.add(result.threeMeshObject);
-      });
-    }
-  }
+  const tileTree = new XYZTileNode(x, y, z, null);
+  const threeMesh = await tileTree.getMesh(martiniParams.error, globeReference.getMatrix(), material);
+  scene.add(threeMesh);
 
   // dat.gui menu setup
   const gui = new GUI();
@@ -130,31 +118,25 @@ function main() {
   const martiniGUI = gui.addFolder("Martini");
   martiniGUI.open();
   martiniGUI.add(martiniParams, "error", 0, 20, 0.5).onChange((error) => {
-    updateMeshes(error, scene, material, tileMeshes, globeReference);
+    updateMeshes(error, scene, material, tileTree, globeReference);
   });
 
   // start animating
   animate();
 }
 
-
-
 const updateMeshes = debounced(
-  async (error, scene, material, tileMeshes, globeReference) => {
+  async (error, scene, material, tileTree, globeReference) => {
+    const tileMeshes = tileTree.getLeafNodes()
+    console.log('tiles', tileMeshes);
     for (let i in tileMeshes) {
+      const tileMesh = tileMeshes[i];
       // calculate new mesh
-      let mesh = tileMeshes[i].tile.getMesh(error);
-
-      // set position
-      let geometry = geometryFromMartiniMesh(
-        mesh,
-        tileMeshes[i].elevation,
-        tileMeshes[i].bounds,
-        globeReference.getMatrix()
-      );
-      scene.remove(tileMeshes[i].threeMeshObject);
-      tileMeshes[i].threeMeshObject = new THREE.Mesh(geometry, material);
-      scene.add(tileMeshes[i].threeMeshObject);
+      if(tileMesh.mesh) {
+        scene.remove(tileMesh.mesh);
+      }
+      let mesh = await tileMesh.getMesh(error, globeReference.getMatrix(), material);
+      scene.add(mesh);
     }
   },
   200

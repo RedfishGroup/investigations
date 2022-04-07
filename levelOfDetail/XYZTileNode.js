@@ -1,4 +1,8 @@
-import { splitTileCoordinates } from './utils.js'
+import { splitTileCoordinates, getTileBounds } from './utils.js'
+import mapboxMartini from "https://cdn.skypack.dev/@mapbox/martini";
+import { getAndDecodeTerrariumElevationTile } from './mapzenTiles.js';
+import { geometryFromMartiniMesh } from './geometryUtils.js';
+import * as THREE from "three";
 
 /**
  *
@@ -16,7 +20,7 @@ import { splitTileCoordinates } from './utils.js'
  *
  */
 
-class XYZTileNode {
+export class XYZTileNode {
     constructor(x, y, z, parent) {
         this.x = x
         this.y = y
@@ -24,7 +28,7 @@ class XYZTileNode {
         this.parent = parent
         this.children = []
         this.elevation = null
-        this.geometry = null
+        this.mesh = null
         this._lastMArtiniError = null
     }
 
@@ -60,8 +64,8 @@ class XYZTileNode {
 
     async getElevation() {
         if (!this.elevation) {
-            const elevation = await getAndDecodeTerrariumElevationTile(x, y, z)
-            const elev257 = elevation.resample(257, 257)
+            const elevation = await getAndDecodeTerrariumElevationTile(this.x, this.y, this.z)
+            const elev257 = await elevation.resample(257, 257)
             this.elevation = elev257
         }
         return this.elevation
@@ -72,27 +76,66 @@ class XYZTileNode {
         return bounds
     }
 
+
+     needsUpdate(martiniError) {
+        if (this._lastMArtiniError !== martiniError) {
+            this._lastMArtiniError = martiniError
+            return true
+        }
+        if(!this.mesh) {
+            return true
+        }
+        return false
+    }
+
     async getGeometry(martiniError, homeMatrix) {
-        let needsUpdate =
-            this._lastMArtiniError !== martiniError || !this.geometry
-        if (!needsUpdate) {
-            return this.geometry
-        } else {
             console.log('needs update', this.toString())
             const bounds = this.getBounds()
             console.log('tile bounds', bounds)
             const rtin = new mapboxMartini(257)
-            const tile = rtin.createTile(this.elevation.data)
-            const mesh = tile.getMesh(martiniError)
+            const elev = await this.getElevation()
+            const tile = rtin.createTile(elev.data)
+            const mesh = tile.getMesh(martiniError || 0.1)
 
             let geometry = geometryFromMartiniMesh(
                 mesh,
-                this.elevation,
+                elev,
                 bounds,
                 homeMatrix
             )
-            this.geometry = geometry
             return geometry
+    }
+
+    async getMesh(martiniError, homeMatrix, material) {
+        if (this.needsUpdate(martiniError)) {
+            const geometry = await this.getGeometry(martiniError, homeMatrix)
+            const mesh = new THREE.Mesh(geometry, material)
+            this.mesh = mesh
+        }
+        return this.mesh
+    }
+
+    getLeafNodes() {
+        if (this.children.length === 0) {
+            return [this]
+        } else {
+            const leafNodes = []
+            this.children.forEach(child => {
+                leafNodes.push(...child.getLeafNodes())
+            })
+            return leafNodes
+        }
+    }
+
+    getNonLeafNodes() {
+        if (this.children.length === 0) {
+            return []
+        } else {  
+            const nonLeafNodes = [this]  
+            this.children.forEach(child => {
+                nonLeafNodes.push(...child.getNonLeafNodes())
+            })
+            return nonLeafNodes
         }
     }
 
@@ -116,14 +159,14 @@ class XYZTileNode {
     }
 }
 
-async function splitTile(x, y, z, martiniError, homeMatrix) {
-    const coords = splitTileCoordinates(x, y, z)
-    const promises = coords.map((coord) => {
-        return testMartiniTerrain(coord.x, coord.y, coord.z, {
-            error: martiniError,
-            matrix: homeMatrix,
-        })
-    })
-    const results = await Promise.all(promises)
-    return results
-}
+// async function splitTile(x, y, z, martiniError, homeMatrix) {
+//     const coords = splitTileCoordinates(x, y, z)
+//     const promises = coords.map((coord) => {
+//         return testMartiniTerrain(coord.x, coord.y, coord.z, {
+//             error: martiniError,
+//             matrix: homeMatrix,
+//         })
+//     })
+//     const results = await Promise.all(promises)
+//     return results
+// }
