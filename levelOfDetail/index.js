@@ -124,14 +124,16 @@ async function main() {
     gui.add(
         {
             add: (foo) => {
-                tileTree.getLeafNodes().forEach((node) => {
-                    splitNode(
+                Promise.all(tileTree.getLeafNodes().map((node) => {
+                    return splitNode(
                         node,
                         scene,
                         martiniParams.error,
                         globeReference,
                         material
                     )
+                })).then(()=>{
+                  console.log('done', tileTree.toString())
                 })
             },
         },
