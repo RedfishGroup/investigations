@@ -14,7 +14,6 @@ import { geometryFromMartiniMesh } from "./geometryUtils.js";
 import {
   getTileBounds,
   latLngToSlippyXYZ,
-  splitTileCoordinates,
 } from "./utils.js";
 
 console.log(GUI);
@@ -138,17 +137,7 @@ function main() {
   animate();
 }
 
-async function splitTile(x, y, z, martiniError, homeMatrix) {
-  const coords = splitTileCoordinates(x, y, z);
-  const promises = coords.map((coord) => {
-    return testMartiniTerrain(coord.x, coord.y, coord.z, {
-      error: martiniError,
-      matrix: homeMatrix,
-    });
-  });
-  const results = await Promise.all(promises);
-  return results;
-}
+
 
 const updateMeshes = debounced(
   async (error, scene, material, tileMeshes, globeReference) => {
