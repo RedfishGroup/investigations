@@ -111,7 +111,6 @@ class XYZTileNode {
         return this.children
     }
 
-
     toString() {
         return `${this.x},${this.y},${this.z}`
     }
