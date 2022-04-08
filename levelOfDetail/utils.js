@@ -63,17 +63,17 @@ export function splitTileCoordinates(x, y, z) {
  * @param {Number} pixels 
  * @returns {DataSet}
  */
-//  export function padDataSet(ds, pixels=1) {
-//     const newWidth = ds.width + (2 * pixels)
-//     const newHeight = ds.height + (2 * pixels)
-//     const newData = new DataSet(newWidth, newHeight, new ds.data.constructor(newWidth*newHeight))
-//     for(let j=0; j<newHeight; j++) {
-//         for(let i=0; i<newWidth; i++) {
-//             const x = Math.min(ds.width-1, Math.max(0, i - pixels))
-//             const y = Math.min(ds.height-1, Math.max(0, j - pixels))
-//             const v = ds.sample(x, y)
-//             newData.setXY(i, j, v)
-//         }
-//     }
-//     return newData
-// }
+ export function padDataSet(ds, pixels=1) {
+    const newWidth = ds.width + (2 * pixels)
+    const newHeight = ds.height + (2 * pixels)
+    const newData = new DataSet(newWidth, newHeight, new ds.data.constructor(newWidth*newHeight))
+    for(let j=0; j<newHeight; j++) {
+        for(let i=0; i<newWidth; i++) {
+            const x = Math.min(ds.width-1, Math.max(0, i - pixels))
+            const y = Math.min(ds.height-1, Math.max(0, j - pixels))
+            const v = ds.sample(x, y)
+            newData.setXY(i, j, v)
+        }
+    }
+    return newData
+}

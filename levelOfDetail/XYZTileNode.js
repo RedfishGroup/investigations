@@ -108,7 +108,7 @@ export class XYZTileNode {
      * @param {boolean} stretchToEdge Stretch the edge of the tile. It expands the bounds by 1/2 pixel on each side.
      * @returns {LatLngBounds}
      */
-    getBounds(stretchToEdge = true) {
+    getBounds(stretchToEdge = false) {
         const bounds = getTileBounds(this.x, this.y, this.z)
         if (stretchToEdge) {
             // stretch the bounds to the edge of the tile. This is to minimize gaps in the mesh.
