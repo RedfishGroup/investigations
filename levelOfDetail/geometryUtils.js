@@ -78,6 +78,10 @@ export function geometryFromMartiniMesh(
             'position',
             new THREE.BufferAttribute(new Float32Array(maxPoints * 3), 3)
         )
+        geometry.setAttribute(
+            'elevation',
+            new THREE.BufferAttribute(new Float32Array(maxPoints), 1)
+        )
 
         updateGeometry(geometry, mesh, elevation, bounds, matrix)
 
@@ -87,14 +91,13 @@ export function geometryFromMartiniMesh(
 
 export function updateGeometry(geometry, mesh, elevation, bounds, matrix) {
     setIndex(geometry, mesh.triangles)
-    setPosition(
-        geometry,
-        verticesFromMartiniMesh(mesh, elevation, bounds, matrix)
-    )
+    let attributes = verticesFromMartiniMesh(mesh, elevation, bounds, matrix)
+    setPosition(geometry, attributes.vertices)
+    setElevation(geometry, attributes.elevations)
     geometry.setDrawRange(0, mesh.triangles.length)
 }
 
-export function verticesFromMartiniMesh(
+function verticesFromMartiniMesh(
     mesh,
     elevation,
     bounds,
@@ -104,6 +107,7 @@ export function verticesFromMartiniMesh(
         let { north, south, east, west } = bounds
 
         let vertices = new Float32Array((mesh.vertices.length / 2) * 3)
+        let elevations = new Float32Array(mesh.vertices.length / 2)
 
         // elevation tiles are always square
         let dim = elevation.width
@@ -113,6 +117,7 @@ export function verticesFromMartiniMesh(
             let mercY = mesh.vertices[i + 1]
 
             let elev = elevation.sample(mercX, dim - mercY - 1)
+            elevations[i / 2] = elev
 
             let lon = (mercX / dim) * (east - west) + west
             let lat = (mercY / dim) * (north - south) + south
@@ -126,7 +131,7 @@ export function verticesFromMartiniMesh(
             vertices[index + 2] = vec.z
         }
 
-        return vertices
+        return { vertices, elevations }
     }
 }
 
@@ -149,4 +154,22 @@ function setPosition(geometry, vertices) {
         )
     }
     geometry.attributes.position.needsUpdate = true
+}
+
+function setElevation(geometry, elevation) {
+    // update elevation
+    let min = Number.POSITIVE_INFINITY
+    let max = Number.NEGATIVE_INFINITY
+    for (let j = 0; j < elevation.length; j++) {
+        if (elevation[j] < min) {
+            min = elevation[j]
+        }
+        if (elevation[j] > max) {
+            max = elevation[j]
+        }
+        geometry.attributes.elevation.setX(j, elevation[j])
+    }
+    geometry.attributes.elevation.min = min
+    geometry.attributes.elevation.max = max
+    geometry.attributes.elevation.needsUpdate = true
 }

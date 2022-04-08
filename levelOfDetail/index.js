@@ -9,6 +9,8 @@ import { debounced } from './debounced.js'
 
 import { updateGeometry } from './geometryUtils.js'
 
+import { ElevationShaderMaterial } from './materialUtils.js'
+
 import { getTileBounds, latLngToSlippyXYZ } from './utils.js'
 
 import { XYZTileNode } from './XYZTileNode.js'
@@ -76,12 +78,15 @@ async function main() {
     }
 
     const center = {
-        Latitude: 35.19251772180017,
-        Longitude: -106.42811011436379,
-        //Latitude: 27.9881,
-        //Longitude: 86.925,
+        // Albuquerque
+        //Latitude: 35.19251772180017,
+        //Longitude: -106.42811011436379,
+
+        // Everest
+        Latitude: 27.9881,
+        Longitude: 86.925,
     }
-    const zoom = 10
+    const zoom = 9
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
     const bounds = getTileBounds(x, y, z)
@@ -99,66 +104,18 @@ async function main() {
         side: THREE.BackSide,
         color: 0xffaa00,
         wireframe: false,
-        vertexShader: `
-        precision highp float;
-
-        varying vec3 vPosition;
-
-        void main() {
-          vPosition = position;
-
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-        `,
-        fragmentShader: `
-            precision highp float;
-
-            uniform float uMin;
-            uniform float uScalar;
-
-            uniform vec3 uColor;
-
-            varying vec3 vPosition;
-
-            void main() {
-              float scale = (vPosition.z - uMin) / uScalar;
-              gl_FragColor = vec4(uColor.r * scale, uColor.g * scale, uColor.b * scale, 1.0);
-            }
-        `,
     }
 
-    const material = new THREE.ShaderMaterial({
-        ...materialParams,
-        uniforms: {
-            uMin: { value: 0.2 },
-            uColor: new THREE.Uniform(new THREE.Color(materialParams.color)),
-            uScalar: { value: 0.4 },
-        },
-    })
+    const material = new ElevationShaderMaterial(materialParams)
 
-    /*let maxZ = Number.NEGATIVE_INFINITY,
-        minZ = Number.POSITIVE_INFINITY
-    
-    // for computing scalar
-    result.geometry.computeBoundingBox()
-    if (result.geometry.boundingBox.max.z > maxZ) {
-        maxZ = result.geometry.boundingBox.max.z
-    }
-    if (result.geometry.boundingBox.min.z < minZ) {
-        minZ = result.geometry.boundingBox.min.z
-    }
-
-    if (i === 2 && j === 2) {
-        material.uniforms.uMin = { value: minZ }
-        material.uniforms.uScalar = { value: maxZ - minZ }
-        material.uniformsNeedUpdate = true
-    }*/
     const tileTree = new XYZTileNode(x, y, z, null)
     const threeMesh = await tileTree.getThreeMesh(
         martiniParams.error,
         globeReference.getMatrix(),
         material
     )
+    material.setMin(threeMesh.geometry.attributes.elevation.min)
+    material.setMax(threeMesh.geometry.attributes.elevation.max)
     scene.add(threeMesh)
 
     // dat.gui menu setup
