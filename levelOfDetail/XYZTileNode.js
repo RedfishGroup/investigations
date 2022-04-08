@@ -16,6 +16,11 @@ import * as THREE from 'three'
  *
  */
 
+let nodeCount = 0
+const nodeLookup = {}
+export function getXYZTileNodeByID(id) {
+    return nodeLookup[id]
+}
 export class XYZTileNode {
     /**
      *
@@ -34,6 +39,8 @@ export class XYZTileNode {
         this.elevation = null
         this.threeMesh = null
         this._lastMArtiniError = null
+        this.id = nodeCount++
+        nodeLookup[this.id] = this
     }
 
     /**
@@ -50,6 +57,7 @@ export class XYZTileNode {
                 this.z - 1,
                 null
             )
+            parent.children.push(this)
             this.parent = parent
             return parent
         }
@@ -63,7 +71,14 @@ export class XYZTileNode {
         // create the four child nodes
         const children = splitTileCoordinates(this.x, this.y, this.z).map(
             (c) => {
-                return new XYZTileNode(c.x, c.y, c.z, this)
+                const childExists = this.children.find((child) => {
+                    child.x === c.x && child.y === c.y && child.z === c.z
+                })
+                if (childExists) {
+                    return childExists
+                } else {
+                    return new XYZTileNode(c.x, c.y, c.z, this)
+                }
             }
         )
         this.children = children
@@ -89,10 +104,21 @@ export class XYZTileNode {
 
     /**
      * Get bounds for this node.
+     * 
+     * @param {boolean} stretchToEdge Stretch the edge of the tile. It expands the bounds by 1/2 pixel on each side.
      * @returns {LatLngBounds}
      */
-    getBounds() {
+    getBounds(stretchToEdge = true) {
         const bounds = getTileBounds(this.x, this.y, this.z)
+        if (stretchToEdge) {
+            // stretch the bounds to the edge of the tile. This is to minimize gaps in the mesh.
+            const latPadding = (bounds.north - bounds.south) / (257 * 2)
+            const lngPadding = (bounds.east - bounds.west) / (257 * 2)
+            bounds.north = bounds.north + latPadding
+            bounds.south = bounds.south - latPadding
+            bounds.east = bounds.east + lngPadding
+            bounds.west = bounds.west - lngPadding
+        }
         return bounds
     }
 
