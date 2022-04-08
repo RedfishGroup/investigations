@@ -80,8 +80,10 @@ function main() {
     }
 
     const center = {
-        Latitude: 35.19251772180017,
-        Longitude: -106.42811011436379,
+        //Latitude: 35.19251772180017,
+        //Longitude: -106.42811011436379,
+        Latitude: 27.9881,
+        Longitude: 86.925,
     }
     const zoom = 10
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
@@ -100,10 +102,44 @@ function main() {
     let materialParams = {
         side: THREE.BackSide,
         color: 0xffff00,
-        wireframe: true,
+        wireframe: false,
+        vertexShader: `
+        precision highp float;
+
+        uniform vec3 uColor;
+
+        varying vec3 vColor;
+        varying vec3 vPosition;
+
+        void main() {
+            vColor = uColor;
+            vPosition = position;
+
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+        `,
+        fragmentShader: `
+            precision highp float;
+
+            varying vec3 vColor;
+            varying vec3 vPosition;
+
+            void main() {
+              gl_FragColor = vec4(
+                vColor.r * vPosition.z,
+                vColor.g * vPosition.z,
+                vColor.b * vPosition.z,
+                1.0);
+            }
+        `,
     }
-    //const material = new THREE.MeshNormalMaterial(materialParams);
-    const material = new THREE.MeshBasicMaterial(materialParams)
+
+    const material = new THREE.ShaderMaterial({
+        ...materialParams,
+        uniforms: {
+            uColor: new THREE.Uniform(new THREE.Color(materialParams.color)),
+        },
+    })
 
     const tileMeshes = []
     console.log(tileMeshes)
@@ -131,11 +167,10 @@ function main() {
     materialGUI.open()
     materialGUI.add(materialParams, 'wireframe').onChange((bool) => {
         material.wireframe = bool
-        material.needsUpdate = true
     })
     materialGUI.addColor(materialParams, 'color').onChange((color) => {
-        material.color = new THREE.Color(color)
-        material.needsUpdate = true
+        material.uniforms.uColor = new THREE.Uniform(new THREE.Color(color))
+        material.uniformsNeedUpdate = true
     })
     const martiniGUI = gui.addFolder('Martini')
     martiniGUI.open()
