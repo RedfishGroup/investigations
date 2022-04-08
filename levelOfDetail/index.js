@@ -80,10 +80,10 @@ function main() {
     }
 
     const center = {
-        //Latitude: 35.19251772180017,
-        //Longitude: -106.42811011436379,
-        Latitude: 27.9881,
-        Longitude: 86.925,
+        Latitude: 35.19251772180017,
+        Longitude: -106.42811011436379,
+        //Latitude: 27.9881,
+        //Longitude: 86.925,
     }
     const zoom = 10
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
@@ -101,35 +101,32 @@ function main() {
 
     let materialParams = {
         side: THREE.BackSide,
-        color: 0xffff00,
+        color: 0xffaa00,
         wireframe: false,
         vertexShader: `
         precision highp float;
 
-        uniform vec3 uColor;
-
-        varying vec3 vColor;
         varying vec3 vPosition;
 
         void main() {
-            vColor = uColor;
-            vPosition = position;
+          vPosition = position;
 
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
         `,
         fragmentShader: `
             precision highp float;
 
-            varying vec3 vColor;
+            uniform float uMin;
+            uniform float uScalar;
+
+            uniform vec3 uColor;
+
             varying vec3 vPosition;
 
             void main() {
-              gl_FragColor = vec4(
-                vColor.r * vPosition.z,
-                vColor.g * vPosition.z,
-                vColor.b * vPosition.z,
-                1.0);
+              float scale = (vPosition.z - uMin) / uScalar;
+              gl_FragColor = vec4(uColor.r * scale, uColor.g * scale, uColor.b * scale, 1.0);
             }
         `,
     }
@@ -137,12 +134,15 @@ function main() {
     const material = new THREE.ShaderMaterial({
         ...materialParams,
         uniforms: {
+            uMin: { value: 0 },
             uColor: new THREE.Uniform(new THREE.Color(materialParams.color)),
+            uScalar: { value: 1 },
         },
     })
 
     const tileMeshes = []
-    console.log(tileMeshes)
+    let maxZ = Number.NEGATIVE_INFINITY,
+        minZ = Number.POSITIVE_INFINITY
     for (let i = -2; i <= 2; i++) {
         for (let j = -2; j <= 2; j++) {
             // martini test function for meshing tile
@@ -152,6 +152,22 @@ function main() {
             }).then((result) => {
                 // add martini terrain mesh
                 tileMeshes.push(result)
+
+                // for computing scalar
+                result.geometry.computeBoundingBox()
+                if (result.geometry.boundingBox.max.z > maxZ) {
+                    maxZ = result.geometry.boundingBox.max.z
+                }
+                if (result.geometry.boundingBox.min.z < minZ) {
+                    minZ = result.geometry.boundingBox.min.z
+                }
+
+                if (i === 2 && j === 2) {
+                    material.uniforms.uMin = { value: minZ }
+                    material.uniforms.uScalar = { value: maxZ - minZ }
+                    material.uniformsNeedUpdate = true
+                }
+
                 result.threeMeshObject = new THREE.Mesh(
                     result.geometry,
                     material
