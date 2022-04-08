@@ -134,21 +134,25 @@ async function main() {
     martiniGUI.add(martiniParams, 'error', 0, 20, 0.5).onChange((error) => {
         updateMeshes(error, tileTree, globeReference, material)
     })
-    gui.add(
-        {
-            add: async (foo) => {
-                await splitAllTiles(
-                    tileTree,
-                    scene,
-                    martiniParams.error,
-                    globeReference,
-                    material
-                )
-                console.log('done', tileTree.toString())
+    const lodGUI = gui.addFolder('Level of Detail')
+    lodGUI.open()
+    lodGUI
+        .add(
+            {
+                add: async (foo) => {
+                    await splitAllTiles(
+                        tileTree,
+                        scene,
+                        martiniParams.error,
+                        globeReference,
+                        material
+                    )
+                    console.log('done', tileTree.toString())
+                },
             },
-        },
-        'add'
-    ).name('split all tiles')
+            'add'
+        )
+        .name('split all tiles')
 
     // start animating
     animate()

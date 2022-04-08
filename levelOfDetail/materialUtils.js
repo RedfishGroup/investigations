@@ -75,3 +75,15 @@ export class ElevationShaderMaterial extends THREE.ShaderMaterial {
         }
     }
 }
+
+export class DepthShaderMaterial extends THREE.ShaderMaterial {
+    constructor(options = {}) {
+        super(options)
+    }
+}
+
+export class TilePickingMaterial extends THREE.ShaderMaterial {
+    constructor(options = {}) {
+        super(options)
+    }
+}
