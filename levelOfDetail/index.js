@@ -7,19 +7,15 @@ import { drawXYPlane, drawWorldAxes } from './geoTools.js'
 
 import { debounced } from './debounced.js'
 
-import { testMartiniTerrain } from './tests.js'
-
 import { updateGeometry } from './geometryUtils.js'
 
-import {
-    getTileBounds,
-    latLngToSlippyXYZ,
-    splitTileCoordinates,
-} from './utils.js'
+import { getTileBounds, latLngToSlippyXYZ } from './utils.js'
+
+import { XYZTileNode } from './XYZTileNode.js'
 
 console.log(GUI)
 
-function main() {
+async function main() {
     // renderer setup
     const parent = document.querySelector('#threeDiv')
     const renderer = new THREE.WebGLRenderer()
@@ -134,48 +130,36 @@ function main() {
     const material = new THREE.ShaderMaterial({
         ...materialParams,
         uniforms: {
-            uMin: { value: 0 },
+            uMin: { value: 0.2 },
             uColor: new THREE.Uniform(new THREE.Color(materialParams.color)),
-            uScalar: { value: 1 },
+            uScalar: { value: 0.4 },
         },
     })
 
-    const tileMeshes = []
-    let maxZ = Number.NEGATIVE_INFINITY,
+    /*let maxZ = Number.NEGATIVE_INFINITY,
         minZ = Number.POSITIVE_INFINITY
-    for (let i = -2; i <= 2; i++) {
-        for (let j = -2; j <= 2; j++) {
-            // martini test function for meshing tile
-            testMartiniTerrain(x + i, y + j, z, {
-                error: martiniParams.error,
-                matrix: globeReference.getMatrix(),
-            }).then((result) => {
-                // add martini terrain mesh
-                tileMeshes.push(result)
-
-                // for computing scalar
-                result.geometry.computeBoundingBox()
-                if (result.geometry.boundingBox.max.z > maxZ) {
-                    maxZ = result.geometry.boundingBox.max.z
-                }
-                if (result.geometry.boundingBox.min.z < minZ) {
-                    minZ = result.geometry.boundingBox.min.z
-                }
-
-                if (i === 2 && j === 2) {
-                    material.uniforms.uMin = { value: minZ }
-                    material.uniforms.uScalar = { value: maxZ - minZ }
-                    material.uniformsNeedUpdate = true
-                }
-
-                result.threeMeshObject = new THREE.Mesh(
-                    result.geometry,
-                    material
-                )
-                scene.add(result.threeMeshObject)
-            })
-        }
+    
+    // for computing scalar
+    result.geometry.computeBoundingBox()
+    if (result.geometry.boundingBox.max.z > maxZ) {
+        maxZ = result.geometry.boundingBox.max.z
     }
+    if (result.geometry.boundingBox.min.z < minZ) {
+        minZ = result.geometry.boundingBox.min.z
+    }
+
+    if (i === 2 && j === 2) {
+        material.uniforms.uMin = { value: minZ }
+        material.uniforms.uScalar = { value: maxZ - minZ }
+        material.uniformsNeedUpdate = true
+    }*/
+    const tileTree = new XYZTileNode(x, y, z, null)
+    const threeMesh = await tileTree.getThreeMesh(
+        martiniParams.error,
+        globeReference.getMatrix(),
+        material
+    )
+    scene.add(threeMesh)
 
     // dat.gui menu setup
     const gui = new GUI()
@@ -191,38 +175,67 @@ function main() {
     const martiniGUI = gui.addFolder('Martini')
     martiniGUI.open()
     martiniGUI.add(martiniParams, 'error', 0, 20, 0.5).onChange((error) => {
-        updateMeshes(error, tileMeshes, globeReference)
+        updateMeshes(error, tileTree, globeReference, material)
     })
+    gui.add(
+        {
+            add: async (foo) => {
+                await splitAllTiles(
+                    tileTree,
+                    scene,
+                    martiniParams.error,
+                    globeReference,
+                    material
+                )
+                console.log('done', tileTree.toString())
+            },
+        },
+        'add'
+    ).name('split all tiles')
 
     // start animating
     animate()
 }
 
-async function splitTile(x, y, z, martiniError, homeMatrix) {
-    const coords = splitTileCoordinates(x, y, z)
-    const promises = coords.map((coord) => {
-        return testMartiniTerrain(coord.x, coord.y, coord.z, {
-            error: martiniError,
-            matrix: homeMatrix,
+async function splitAllTiles(tileTree, scene, error, globeReference, material) {
+    return Promise.all(
+        tileTree.getLeafNodes().map((node) => {
+            return splitNode(node, scene, error, globeReference, material)
         })
-    })
-    const results = await Promise.all(promises)
-    return results
+    )
 }
 
-const updateMeshes = debounced(async (error, tileMeshes, globeReference) => {
-    for (let i in tileMeshes) {
-        // calculate new mesh
-        let mesh = tileMeshes[i].tile.getMesh(error)
-
-        updateGeometry(
-            tileMeshes[i].geometry,
-            mesh,
-            tileMeshes[i].elevation,
-            tileMeshes[i].bounds,
-            globeReference.getMatrix()
-        )
+async function splitNode(node, scene, martiniError, globeReference, material) {
+    if (node.threeMesh) {
+        scene.remove(node.threeMesh)
     }
-}, 200)
+    const promises = node.getChildren().map(async (child) => {
+        let mesh = await child.getThreeMesh(
+            martiniError,
+            globeReference.getMatrix(),
+            material
+        )
+        console.log('mesh', mesh)
+        scene.add(mesh)
+    })
+    return Promise.all(promises)
+}
+
+const updateMeshes = debounced(
+    async (error, tileTree, globeReference, material) => {
+        for (let tm of tileTree.getLeafNodes()) {
+            updateGeometry(
+                tm.threeMesh.geometry,
+                await tm.getMartiniMesh(error),
+                tm.elevation,
+                tm.getBounds(),
+                globeReference.getMatrix()
+            )
+        }
+    },
+    200,
+    undefined,
+    true
+)
 
 main()
