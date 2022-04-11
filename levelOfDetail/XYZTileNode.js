@@ -33,6 +33,7 @@ export class XYZTileNode {
         this.x = x
         this.y = y
         this.z = z
+        this.PAD_SIDES_TO_REMOVE_SEAMS = true
         this.parent = parent
         this.children = []
         this.elevation = null
@@ -130,9 +131,14 @@ export class XYZTileNode {
                 this.y,
                 this.z
             )
-            const elev255 = await elevation.resample(255, 255)
-            const elev257 = padDataSetMaintainSlope(elev255)
-            this.elevation = elev257
+            if (this.PAD_SIDES_TO_REMOVE_SEAMS) {
+                const elev255 = await elevation.resample(255, 255)
+                const elev257 = padDataSetMaintainSlope(elev255)
+                this.elevation = elev257
+            } else {
+                this.elevation = await elevation.resample(257, 257)
+            }
+
         }
         return this.elevation
     }
@@ -140,12 +146,11 @@ export class XYZTileNode {
     /**
      * Get bounds for this node.
      * 
-     * @param {boolean} stretchToEdge Stretch the edge of the tile. It expands the bounds by 1 pixel on each side.
      * @returns {LatLngBounds}
      */
-    getBounds(stretchToEdge = true) {
+    getBounds() {
         const bounds = getTileBounds(this.x, this.y, this.z)
-        if (stretchToEdge) {
+        if (this.PAD_SIDES_TO_REMOVE_SEAMS) {
             // stretch the bounds to the edge of the tile. This is to minimize gaps in the mesh.
             const latPadding = (bounds.north - bounds.south) / (257)
             const lngPadding = (bounds.east - bounds.west) / (257)
