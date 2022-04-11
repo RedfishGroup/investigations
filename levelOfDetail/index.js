@@ -129,8 +129,8 @@ async function main() {
         Longitude: -108.83866,
 
         // Everest
-        //Latitude: 27.9881,
-        //Longitude: 86.925,
+        // Latitude: 27.9881,
+        // Longitude: 86.925,
     }
     const zoom = 11
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
