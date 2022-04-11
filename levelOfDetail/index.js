@@ -144,7 +144,7 @@ async function main() {
         zoom,
     })
 
-    let martiniParams = { error: 10 }
+    let martiniParams = { error: 1 }
 
     let materialParams = {
         side: THREE.BackSide,

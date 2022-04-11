@@ -18,8 +18,8 @@ import * as THREE from 'three'
 
 export class XYZTileNode {
 
-    static nodeIDLookup = {}
-    static nodeCount = 0
+    static #nodeIDLookup = {} // aparently, the hash symbol makes it a private varaible.
+    static #nodeCount = 0
 
     /**
      *
@@ -30,42 +30,19 @@ export class XYZTileNode {
      */
     constructor(x, y, z, parent) {
         this.MAX_ZOOM = 16 // The maximum zoom level for the tiles
+        this.PAD_SIDES_TO_REMOVE_SEAMS = true
+        
         this.x = x
         this.y = y
         this.z = z
-        this.PAD_SIDES_TO_REMOVE_SEAMS = true
         this.parent = parent
         this.children = []
         this.elevation = null
         this.threeMesh = null
         this._lastMArtiniError = null
-        this.id = XYZTileNode.nodeCount
-        XYZTileNode.nodeCount = XYZTileNode.nodeCount + 1
-        XYZTileNode.nodeIDLookup[this.id] = this
-    }
-
-
-    /**
-     *  Lookup nodes in the tree by the xyz coordinates of the tile.
-     * 
-     * @param {Number} x 
-     * @param {Number} y 
-     * @param {Number} z 
-     * @param {XYZTileNode} node 
-     * @returns Object {found: Boolean, node: XYZTileNode}
-     */
-    lookupNodeByXYZ(x, y, z, node = this) {
-        if (node.x === x && node.y === y && node.z === z) {
-            return { found: true, node: node }
-        }
-        const xChoice = Math.floor(x / (2 ** (z - node.z - 1)))
-        const yChoice = Math.floor(y / (2 ** (z - node.z - 1)))
-        const child = node.children.find(child => child.x === xChoice && child.y === yChoice)
-        if (child) {
-            return this.lookupNodeByXYZ(x, y, z, child)
-        } else {
-            return { found: false, node: node }
-        }
+        this.id = XYZTileNode.#nodeCount
+        XYZTileNode.#nodeCount = XYZTileNode.#nodeCount + 1
+        XYZTileNode.#nodeIDLookup[this.id] = this
     }
 
     getRoot() {
@@ -76,16 +53,6 @@ export class XYZTileNode {
         }
     }
 
-    // getNeighbors4() {
-    //     const root = this.getRoot()
-    //     const neighbors = [this.lookupNodeByXYZ(this.x, this.y - 1, this.z, root)
-    //         , this.lookupNodeByXYZ(this.x, this.y + 1, this.z, root)
-    //         , this.lookupNodeByXYZ(this.x - 1, this.y, this.z, root)
-    //         , this.lookupNodeByXYZ(this.x + 1, this.y, this.z, root)]
-    //     const neighborLeafs = neighbors.filter(neighbor => neighbor.node.isLeaf())
-    //     return neighborLeafs
-    // }
-
     isLeaf() {
         return this.children.length === 0
     }
@@ -95,7 +62,7 @@ export class XYZTileNode {
      * @returns 
      */
     getNodeByID(id) {
-        return nodeIDLookup[id]
+        return XYZTileNode.#nodeIDLookup[id]
     }
 
     _createChildren() {
@@ -277,5 +244,31 @@ export class XYZTileNode {
             return `[x:${node.x},y:${node.y},z:${node.z}, id:${node.id}]`
         })
         return nodeStrings.join(', ')
+    }
+}
+
+/**
+ * Lookup nodes in the tree by the xyz coordinates of the tile.
+ * Returns found=true if the node was found along with the node. Otherwise it returns found=false and the closest parent node of the node being searched for.
+ *
+ * @param {Number} x
+ * @param {Number} y
+ * @param {Number} z
+ * @param {XYZTileNode} node Node to start the search from, preferably the root node.
+ * @returns Object {found: Boolean, node: XYZTileNode}
+ */
+ export function lookupNodeByXYZ(x, y, z, node) {
+    if (node.x === x && node.y === y && node.z === z) {
+        return { found: true, node: node }
+    }
+    const xChoice = Math.floor(x / 2 ** (z - node.z - 1))
+    const yChoice = Math.floor(y / 2 ** (z - node.z - 1))
+    const child = node.children.find(
+        (child) => child.x === xChoice && child.y === yChoice
+    )
+    if (child) {
+        return this.lookupNodeByXYZ(x, y, z, child)
+    } else {
+        return { found: false, node: node }
     }
 }
