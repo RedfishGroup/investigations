@@ -189,49 +189,11 @@ export function rotateQuaternionFromECEF(quaternion, terrain, lat, lon) {
     return q_
 }
 
-export function drawXYPlane(scene, size = 10) {
-    if (scene) {
-        const grid = new THREE.GridHelper(size, size)
-        grid.rotation.x = Math.PI / 2
-        grid.position.z = -0.0001
-        scene.add(grid)
-    }
-}
-
-export function drawWorldAxes(scene, scale = 10) {
-    if (scene) {
-        // world axes
-        const axesHelper = new THREE.AxesHelper(scale)
-        scene.add(axesHelper)
-
-        /*scene.add(
-      new THREE.ArrowHelper(
-        new THREE.Vector3(1, 0, 0),
-        new THREE.Vector3(),
-        scale,
-        0xff0000,
-        0.05 * scale
-      )
-    );
-    scene.add(
-      new THREE.ArrowHelper(
-        new THREE.Vector3(0, 1, 0),
-        new THREE.Vector3(),
-        scale,
-        0x00ff00,
-        0.05 * scale
-      )
-    );
-    scene.add(
-      new THREE.ArrowHelper(
-        new THREE.Vector3(0, 0, 1),
-        new THREE.Vector3(),
-        scale,
-        0x0000ff,
-        0.05 * scale
-      )
-    );*/
-    }
+export function getXYPlane(size = 10) {
+    const grid = new THREE.GridHelper(size, size)
+    grid.rotation.x = Math.PI / 2
+    grid.position.z = -0.0001
+    return grid
 }
 
 export function isInBounds(lat, lon, bounds) {

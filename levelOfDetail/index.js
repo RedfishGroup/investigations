@@ -4,9 +4,9 @@ import { GUI } from 'https://unpkg.com/dat.gui@0.7.7/build/dat.gui.module.js'
 import { OrbitControls } from 'https://unpkg.com/three@0.139.2/examples/jsm/controls/OrbitControls.js'
 
 import { Frustum } from './Frustum.js'
+import { getXYPlane } from './geoTools.js'
 import { GlobeReference } from './GlobeReference.js'
 import { CalibratedCamera } from './CalibratedCamera.js'
-import { drawXYPlane, drawWorldAxes } from './geoTools.js'
 
 import { debounced } from './debounced.js'
 
@@ -70,10 +70,12 @@ async function main() {
     const scene = new THREE.Scene()
 
     // put in axes
-    drawWorldAxes(scene, 2)
+    const axes = new THREE.AxesHelper(2)
+    scene.add(axes)
 
     // put in x-y plane
-    drawXYPlane(scene)
+    const xyPlane = getXYPlane()
+    scene.add(xyPlane)
 
     // tiling renderer setup
     let width = 300
@@ -122,7 +124,13 @@ async function main() {
 
         // render to depth
         scene.overrideMaterial = depthMaterial
+        axes.visible = false
+        frustum.visible = false
+        xyPlane.visible = false
         tileRenderer.render(scene, tileCam)
+        axes.visible = true
+        frustum.visible = true
+        xyPlane.visible = true
         scene.overrideMaterial = null
 
         // regular render
@@ -162,7 +170,6 @@ async function main() {
         wireframe: false,
     }
 
-    //const material = new THREE.MeshBasicMaterial(materialParams)
     const material = new ElevationShaderMaterial(materialParams)
     const depthMaterial = new DepthShaderMaterial({ side: THREE.BackSide })
     depthMaterial.setCameraPosition(tileCam.position)
