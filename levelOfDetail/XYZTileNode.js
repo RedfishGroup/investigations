@@ -1,4 +1,4 @@
-import { splitTileCoordinates, getTileBounds } from './utils.js'
+import { splitTileCoordinates, getTileBounds, padDataSetMaintainSlope } from './utils.js'
 import mapboxMartini from 'https://cdn.skypack.dev/@mapbox/martini'
 import { getAndDecodeTerrariumElevationTile } from './mapzenTiles.js'
 import { geometryFromMartiniMesh } from './geometryUtils.js'
@@ -43,25 +43,6 @@ export class XYZTileNode {
         XYZTileNode.nodeIDLookup[this.id] = this
     }
 
-    /**
-     *
-     * @returns {XYZTileNode}
-     */
-    getParent() {
-        if (this.parent) {
-            return this.parent
-        } else {
-            const parent = new XYZTileNode(
-                Math.floor(this.x / 2),
-                Math.floor(this.y / 2),
-                this.z - 1,
-                null
-            )
-            parent.children.push(this)
-            this.parent = parent
-            return parent
-        }
-    }
 
     /**
      *  Lookup nodes in the tree by the xyz coordinates of the tile.
@@ -149,7 +130,8 @@ export class XYZTileNode {
                 this.y,
                 this.z
             )
-            const elev257 = await elevation.resample(257, 257)
+            const elev255 = await elevation.resample(255, 255)
+            const elev257 = padDataSetMaintainSlope(elev255)
             this.elevation = elev257
         }
         return this.elevation
@@ -158,15 +140,15 @@ export class XYZTileNode {
     /**
      * Get bounds for this node.
      * 
-     * @param {boolean} stretchToEdge Stretch the edge of the tile. It expands the bounds by 1/2 pixel on each side.
+     * @param {boolean} stretchToEdge Stretch the edge of the tile. It expands the bounds by 1 pixel on each side.
      * @returns {LatLngBounds}
      */
-    getBounds(stretchToEdge = false) {
+    getBounds(stretchToEdge = true) {
         const bounds = getTileBounds(this.x, this.y, this.z)
         if (stretchToEdge) {
             // stretch the bounds to the edge of the tile. This is to minimize gaps in the mesh.
-            const latPadding = (bounds.north - bounds.south) / (257 * 2)
-            const lngPadding = (bounds.east - bounds.west) / (257 * 2)
+            const latPadding = (bounds.north - bounds.south) / (257 )
+            const lngPadding = (bounds.east - bounds.west) / (257 )
             bounds.north = bounds.north + latPadding
             bounds.south = bounds.south - latPadding
             bounds.east = bounds.east + lngPadding

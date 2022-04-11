@@ -77,3 +77,40 @@ export function splitTileCoordinates(x, y, z) {
     }
     return newData
 }
+
+export function padDataSetMaintainSlope(ds){
+    const ds2 = padDataSet(ds,1)
+    //top
+    for(let x=0; x<ds.width; x++) {
+        const v1 = ds.getXY(x, 1)
+        const v2 = ds.getXY(x, 2)
+        const gradient = (v1-v2)
+        const val = v1 + gradient
+        ds2.setXY(x, 0, val)
+    }
+    // bottom
+    for(let x=0; x<ds.width; x++) {
+        const v1 = ds.getXY(x, ds.height-3)
+        const v2 = ds.getXY(x, ds.height-2)
+        const gradient = (v1-v2)
+        const val = v1 + gradient
+        ds2.setXY(x, ds.height-1, val)
+    }
+    // left
+    for(let y=0; y<ds.height; y++) {
+        const v1 = ds.getXY(1, y)
+        const v2 = ds.getXY(2, y)
+        const gradient = (v1-v2)
+        const val = v1 + gradient
+        ds2.setXY(0, y, val)
+    }
+    // right
+    for(let y=0; y<ds.height; y++) {
+        const v1 = ds.getXY(ds.width-3, y)
+        const v2 = ds.getXY(ds.width-2, y)
+        const gradient = (v1-v2)
+        const val = v1 + gradient
+        ds2.setXY(ds.width-1, y, val)
+    }
+    return ds2
+}
