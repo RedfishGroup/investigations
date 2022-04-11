@@ -18,7 +18,7 @@ import * as THREE from 'three'
 
 export class XYZTileNode {
 
-    static nodeLookup = {}
+    static nodeIDLookup = {}
     static nodeCount = 0
 
     /**
@@ -40,7 +40,7 @@ export class XYZTileNode {
         this._lastMArtiniError = null
         this.id = XYZTileNode.nodeCount
         XYZTileNode.nodeCount = XYZTileNode.nodeCount + 1
-        XYZTileNode.nodeLookup[this.id] = this
+        XYZTileNode.nodeIDLookup[this.id] = this
     }
 
     /**
@@ -94,15 +94,15 @@ export class XYZTileNode {
         }
     }
 
-    getNeighbors4() {
-        const root = this.getRoot()
-        const neighbors = [this.lookupNodeByXYZ(this.x, this.y - 1, this.z, root)
-            , this.lookupNodeByXYZ(this.x, this.y + 1, this.z, root)
-            , this.lookupNodeByXYZ(this.x - 1, this.y, this.z, root)
-            , this.lookupNodeByXYZ(this.x + 1, this.y, this.z, root)]
-        const neighborLeafs = neighbors.filter(neighbor => neighbor.node.isLeaf())
-        return neighborLeafs
-    }
+    // getNeighbors4() {
+    //     const root = this.getRoot()
+    //     const neighbors = [this.lookupNodeByXYZ(this.x, this.y - 1, this.z, root)
+    //         , this.lookupNodeByXYZ(this.x, this.y + 1, this.z, root)
+    //         , this.lookupNodeByXYZ(this.x - 1, this.y, this.z, root)
+    //         , this.lookupNodeByXYZ(this.x + 1, this.y, this.z, root)]
+    //     const neighborLeafs = neighbors.filter(neighbor => neighbor.node.isLeaf())
+    //     return neighborLeafs
+    // }
 
     isLeaf() {
         return this.children.length === 0
@@ -113,7 +113,7 @@ export class XYZTileNode {
      * @returns 
      */
     getNodeByID(id) {
-        return nodeLookup[id]
+        return nodeIDLookup[id]
     }
 
     _createChildren() {
