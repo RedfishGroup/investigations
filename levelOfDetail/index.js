@@ -86,7 +86,7 @@ async function main() {
         Latitude: 27.9881,
         Longitude: 86.925,
     }
-    const zoom = 9
+    const zoom = 6
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
     const bounds = getTileBounds(x, y, z)
@@ -147,7 +147,7 @@ async function main() {
                         globeReference,
                         material
                     )
-                    console.log('done', tileTree.toString())
+                    console.log('done',  tileTree,tileTree.toString())
                 },
             },
             'add'

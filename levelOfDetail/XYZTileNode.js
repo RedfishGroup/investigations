@@ -16,12 +16,11 @@ import * as THREE from 'three'
  *
  */
 
-let nodeCount = 0
-const nodeLookup = {}
-export function getXYZTileNodeByID(id) {
-    return nodeLookup[id]
-}
 export class XYZTileNode {
+
+    static nodeLookup = {}
+    static nodeCount = 0
+
     /**
      *
      * @param {Number} x
@@ -39,8 +38,9 @@ export class XYZTileNode {
         this.elevation = null
         this.threeMesh = null
         this._lastMArtiniError = null
-        this.id = nodeCount++
-        nodeLookup[this.id] = this
+        this.id = XYZTileNode.nodeCount
+        XYZTileNode.nodeCount = XYZTileNode.nodeCount + 1
+        XYZTileNode.nodeLookup[this.id] = this
     }
 
     /**
@@ -61,6 +61,59 @@ export class XYZTileNode {
             this.parent = parent
             return parent
         }
+    }
+
+    /**
+     *  Lookup nodes in the tree by the xyz coordinates of the tile.
+     * 
+     * @param {Number} x 
+     * @param {Number} y 
+     * @param {Number} z 
+     * @param {XYZTileNode} node 
+     * @returns Object {found: Boolean, node: XYZTileNode}
+     */
+    lookupNodeByXYZ(x, y, z, node = this) {
+        if (node.x === x && node.y === y && node.z === z) {
+            return { found: true, node: node}
+        }
+        const xChoice = Math.floor(x / (2 ** (z - node.z - 1)))
+        const yChoice = Math.floor(y / (2 ** (z - node.z - 1)))
+        const child = node.children.find(child => child.x === xChoice && child.y === yChoice)
+        if (child) {
+            return this.lookupNodeByXYZ(x, y, z, child)
+        } else {
+            return { found: false, node: node}
+        }
+    }
+
+    getRoot() {
+        if (this.parent) {
+            return this.parent.getRoot()
+        } else {
+            return this
+        }
+    }
+
+    getNeighbors4() {
+        const root = this.getRoot()
+        const neighbors = [this.lookupNodeByXYZ(this.x, this.y - 1, this.z, root)
+            , this.lookupNodeByXYZ(this.x, this.y + 1, this.z, root)
+            , this.lookupNodeByXYZ(this.x - 1, this.y, this.z, root)
+            , this.lookupNodeByXYZ(this.x + 1, this.y, this.z, root)]
+        const neighborLeafs = neighbors.filter(neighbor => neighbor.node.isLeaf())
+        return neighborLeafs
+    }
+
+    isLeaf() {
+        return this.children.length === 0
+    }
+    /**
+     * 
+     * @param {String} id 
+     * @returns 
+     */
+    getNodeByID(id) {
+        return nodeLookup[id]
     }
 
     _createChildren() {
@@ -166,7 +219,7 @@ export class XYZTileNode {
      * @returns {[XYZTileNode, XYZTileNode, ...]}
      */
     getLeafNodes() {
-        if (this.children.length === 0) {
+        if (this.isLeaf()) {
             return [this]
         } else {
             const leafNodes = []
@@ -182,7 +235,7 @@ export class XYZTileNode {
      * @returns {[XYZTileNode, XYZTileNode, ...]}
      */
     getNonLeafNodes() {
-        if (this.children.length === 0) {
+        if (this.isLeaf()) {
             return []
         } else {
             const nonLeafNodes = [this]
@@ -234,7 +287,7 @@ export class XYZTileNode {
     toString() {
         const allNodes = this.getAllNodesBelow()
         const nodeStrings = allNodes.map((node) => {
-            return `[x:${node.x},y:${node.y},z:${node.z}]`
+            return `[x:${node.x},y:${node.y},z:${node.z}, id:${node.id}]`
         })
         return nodeStrings.join(', ')
     }
