@@ -194,7 +194,7 @@ async function main() {
                         globeReference,
                         material
                     )
-                    console.log('done', tileTree.toString())
+                    console.log('done', tileTree, tileTree.toString())
                 },
             },
             'add'

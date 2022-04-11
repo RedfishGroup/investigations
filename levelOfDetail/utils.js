@@ -1,4 +1,7 @@
 import { LatLngBounds } from './LatLngBounds.js'
+import DataSet from 'https://code.agentscript.org/src/DataSet.js'
+window.DataSet = DataSet
+
 
 /**
  *
@@ -49,4 +52,28 @@ export function splitTileCoordinates(x, y, z) {
         { x: 2 * x + 1, y: 2 * y + 1, z: z + 1 },
     ]
     return tileCoords
+}
+
+
+/**
+ * 
+ * Pad a dataset on all sides, by a certain number of pixels, with the value of the closest point.
+ * 
+ * @param {DataSet} ds
+ * @param {Number} pixels 
+ * @returns {DataSet}
+ */
+ export function padDataSet(ds, pixels=1) {
+    const newWidth = ds.width + (2 * pixels)
+    const newHeight = ds.height + (2 * pixels)
+    const newData = new DataSet(newWidth, newHeight, new ds.data.constructor(newWidth*newHeight))
+    for(let j=0; j<newHeight; j++) {
+        for(let i=0; i<newWidth; i++) {
+            const x = Math.min(ds.width-1, Math.max(0, i - pixels))
+            const y = Math.min(ds.height-1, Math.max(0, j - pixels))
+            const v = ds.sample(x, y)
+            newData.setXY(i, j, v)
+        }
+    }
+    return newData
 }
