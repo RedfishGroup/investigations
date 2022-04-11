@@ -12,7 +12,10 @@ import { debounced } from './debounced.js'
 
 import { updateGeometry } from './geometryUtils.js'
 
-import { ElevationShaderMaterial } from './materialUtils.js'
+import {
+    DepthShaderMaterial,
+    ElevationShaderMaterial,
+} from './materialUtils.js'
 
 import { getTileBounds, latLngToSlippyXYZ } from './utils.js'
 
@@ -87,11 +90,11 @@ async function main() {
 
     // tiling camera setup
     const tileCam = new CalibratedCamera({ width, height })
-    tileCam.position.set(0, 0, 0.29)
+    tileCam.position.set(-0.5, -0.5, 0.285)
     tileCam.up.set(0, 0, 1)
     tileCam.updateMatrix()
     tileCam.updateProjectionMatrix()
-    tileCam.lookAt(-0.4, 1, 0.4)
+    tileCam.lookAt(-0.5, 0.5, 0.3)
 
     // camera viewing frustum
     const frustum = new Frustum({ far: 0.2, camera: tileCam })
@@ -114,9 +117,16 @@ async function main() {
     const animate = function () {
         requestAnimationFrame(animate)
 
+        // update orbit controls
         controls.update()
-        renderer.render(scene, camera)
+
+        // render to depth
+        scene.overrideMaterial = depthMaterial
         tileRenderer.render(scene, tileCam)
+        scene.overrideMaterial = null
+
+        // regular render
+        renderer.render(scene, camera)
     }
 
     const center = {
@@ -154,6 +164,8 @@ async function main() {
 
     //const material = new THREE.MeshBasicMaterial(materialParams)
     const material = new ElevationShaderMaterial(materialParams)
+    const depthMaterial = new DepthShaderMaterial({ side: THREE.BackSide })
+    depthMaterial.setCameraPosition(tileCam.position)
 
     const tileTree = new XYZTileNode(x, y, z, null)
     const threeMesh = await tileTree.getThreeMesh(
@@ -173,8 +185,7 @@ async function main() {
         material.wireframe = bool
     })
     materialGUI.addColor(materialParams, 'color').onChange((color) => {
-        material.uniforms.uColor = new THREE.Uniform(new THREE.Color(color))
-        material.uniformsNeedUpdate = true
+        material.setColor(color)
     })
     const martiniGUI = gui.addFolder('Martini')
     martiniGUI.open()
@@ -225,18 +236,19 @@ async function splitAllTiles(tileTree, scene, error, globeReference, material) {
 
 async function splitNode(node, scene, martiniError, globeReference, material) {
     const promises = node.getChildren().map(async (child) => {
-        if (node.threeMesh && scene.children.includes(node.threeMesh)) {
-            scene.remove(node.threeMesh)
-        }
         let mesh = await child.getThreeMesh(
             martiniError,
             globeReference.getMatrix(),
             material
         )
-        console.log('mesh', mesh)
-        scene.add(mesh)
+        return mesh
     })
-    return Promise.all(promises)
+    return Promise.all(promises).then((results) => {
+        scene.remove(node.threeMesh)
+        for (let i in results) {
+            scene.add(results[i])
+        }
+    })
 }
 
 const updateMeshes = debounced(

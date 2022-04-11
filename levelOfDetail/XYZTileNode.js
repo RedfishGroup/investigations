@@ -1,4 +1,8 @@
-import { splitTileCoordinates, getTileBounds, padDataSetMaintainSlope } from './utils.js'
+import {
+    splitTileCoordinates,
+    getTileBounds,
+    padDataSetMaintainSlope,
+} from './utils.js'
 import mapboxMartini from 'https://cdn.skypack.dev/@mapbox/martini'
 import { getAndDecodeTerrariumElevationTile } from './mapzenTiles.js'
 import { geometryFromMartiniMesh } from './geometryUtils.js'
@@ -17,7 +21,6 @@ import * as THREE from 'three'
  */
 
 export class XYZTileNode {
-
     static #nodeIDLookup = {} // aparently, the hash symbol makes it a private varaible.
     static #nodeCount = 0
 
@@ -31,7 +34,7 @@ export class XYZTileNode {
     constructor(x, y, z, parent) {
         this.MAX_ZOOM = 16 // The maximum zoom level for the tiles
         this.PAD_SIDES_TO_REMOVE_SEAMS = true
-        
+
         this.x = x
         this.y = y
         this.z = z
@@ -57,9 +60,9 @@ export class XYZTileNode {
         return this.children.length === 0
     }
     /**
-     * 
-     * @param {String} id 
-     * @returns 
+     *
+     * @param {String} id
+     * @returns
      */
     getNodeByID(id) {
         return XYZTileNode.#nodeIDLookup[id]
@@ -105,22 +108,21 @@ export class XYZTileNode {
             } else {
                 this.elevation = await elevation.resample(257, 257)
             }
-
         }
         return this.elevation
     }
 
     /**
      * Get bounds for this node.
-     * 
+     *
      * @returns {LatLngBounds}
      */
     getBounds() {
         const bounds = getTileBounds(this.x, this.y, this.z)
         if (this.PAD_SIDES_TO_REMOVE_SEAMS) {
             // stretch the bounds to the edge of the tile. This is to minimize gaps in the mesh.
-            const latPadding = (bounds.north - bounds.south) / (257)
-            const lngPadding = (bounds.east - bounds.west) / (257)
+            const latPadding = (bounds.north - bounds.south) / 257
+            const lngPadding = (bounds.east - bounds.west) / 257
             bounds.north = bounds.north + latPadding
             bounds.south = bounds.south - latPadding
             bounds.east = bounds.east + lngPadding
@@ -135,7 +137,6 @@ export class XYZTileNode {
      * @returns
      */
     async getMartiniMesh(martiniError) {
-        console.log('needs update', this.toString())
         const rtin = new mapboxMartini(257)
         const elev = await this.getElevation()
         const tile = rtin.createTile(elev.data)
@@ -154,7 +155,6 @@ export class XYZTileNode {
     async getThreeMesh(martiniError, homeMatrix, material) {
         if (this.needsUpdate(martiniError)) {
             const bounds = this.getBounds()
-            console.log('tile bounds', bounds)
             const marty = await this.getMartiniMesh(martiniError, homeMatrix)
             let geometry = geometryFromMartiniMesh(
                 marty,
@@ -257,7 +257,7 @@ export class XYZTileNode {
  * @param {XYZTileNode} node Node to start the search from, preferably the root node.
  * @returns Object {found: Boolean, node: XYZTileNode}
  */
- export function lookupNodeByXYZ(x, y, z, node) {
+export function lookupNodeByXYZ(x, y, z, node) {
     if (node.x === x && node.y === y && node.z === z) {
         return { found: true, node: node }
     }
