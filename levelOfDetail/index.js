@@ -14,6 +14,7 @@ import { updateGeometry } from './geometryUtils.js'
 
 import {
     DepthShaderMaterial,
+    TilePickingMaterial,
     ElevationShaderMaterial,
 } from './materialUtils.js'
 
@@ -170,18 +171,18 @@ async function main() {
         wireframe: false,
     }
 
-    const material = new ElevationShaderMaterial(materialParams)
+    const elevationMaterial = new ElevationShaderMaterial(materialParams)
     const depthMaterial = new DepthShaderMaterial({ side: THREE.BackSide })
-    depthMaterial.setCameraPosition(tileCam.position)
+    const tileIndexMaterial = new TilePickingMaterial()
 
     const tileTree = new XYZTileNode(x, y, z, null)
     const threeMesh = await tileTree.getThreeMesh(
         martiniParams.error,
         globeReference.getMatrix(),
-        material
+        elevationMaterial
     )
-    material.setMin(threeMesh.geometry.attributes.elevation.min)
-    material.setMax(threeMesh.geometry.attributes.elevation.max)
+    elevationMaterial.setMin(threeMesh.geometry.attributes.elevation.min)
+    elevationMaterial.setMax(threeMesh.geometry.attributes.elevation.max)
     scene.add(threeMesh)
 
     // dat.gui menu setup
@@ -189,15 +190,15 @@ async function main() {
     const materialGUI = gui.addFolder('Material')
     materialGUI.open()
     materialGUI.add(materialParams, 'wireframe').onChange((bool) => {
-        material.wireframe = bool
+        elevationMaterial.wireframe = bool
     })
     materialGUI.addColor(materialParams, 'color').onChange((color) => {
-        material.setColor(color)
+        elevationMaterial.setColor(color)
     })
     const martiniGUI = gui.addFolder('Martini')
     martiniGUI.open()
     martiniGUI.add(martiniParams, 'error', 0, 20, 0.5).onChange((error) => {
-        updateMeshes(error, tileTree, globeReference, material)
+        updateMeshes(error, tileTree, globeReference)
     })
     const lodGUI = gui.addFolder('Level of Detail')
     lodGUI.open()
@@ -210,7 +211,7 @@ async function main() {
                         scene,
                         martiniParams.error,
                         globeReference,
-                        material
+                        elevationMaterial
                     )
                     console.log('done', tileTree, tileTree.toString())
                 },
@@ -259,7 +260,7 @@ async function splitNode(node, scene, martiniError, globeReference, material) {
 }
 
 const updateMeshes = debounced(
-    async (error, tileTree, globeReference, material) => {
+    async (error, tileTree, globeReference) => {
         for (let tm of tileTree.getLeafNodes()) {
             updateGeometry(
                 tm.threeMesh.geometry,

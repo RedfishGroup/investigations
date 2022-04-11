@@ -82,10 +82,6 @@ export class DepthShaderMaterial extends THREE.ShaderMaterial {
         const wireframe = false
         const transparent = false
 
-        const uniforms = {
-            cameraPosition: new THREE.Uniform(new THREE.Vector3()),
-        }
-
         const depthScalar = 1.0 / (256.0 * 256.0)
         const depthThreshold = 0.0000003
 
@@ -104,8 +100,6 @@ export class DepthShaderMaterial extends THREE.ShaderMaterial {
         const fragmentShader =
             `
             precision highp float;
-
-            uniform vec3 uCamPosition;
         
             varying vec3 vPosition;
         
@@ -128,7 +122,7 @@ export class DepthShaderMaterial extends THREE.ShaderMaterial {
             }
         
             void main() {
-                gl_FragColor = vec4(packDepthToRGBA(distance(uCamPosition, vPosition)*` +
+                gl_FragColor = vec4(packDepthToRGBA(distance(cameraPosition, vPosition)*` +
             depthScalar +
             `).xyz, 1.0);
             }
@@ -136,7 +130,6 @@ export class DepthShaderMaterial extends THREE.ShaderMaterial {
 
         super({
             side,
-            uniforms,
             wireframe,
             transparent,
             vertexShader,
@@ -146,18 +139,12 @@ export class DepthShaderMaterial extends THREE.ShaderMaterial {
         this.depthScalar = depthScalar
         this.depthThreshold = depthThreshold
     }
-
-    setCameraPosition(position) {
-        if (position && position.isVector3) {
-            this.uniforms.uCamPosition = new THREE.Uniform(position)
-            this.uniformsNeedUpdate = true
-        }
-    }
 }
 
 export class TilePickingMaterial extends THREE.ShaderMaterial {
     constructor(options = {}) {
-        super(options)
+        const depthScalar = 1.0 / (256.0 * 256.0)
+        const depthThreshold = 0.0000003
 
         const vertexShader = `
             precision highp float;
@@ -199,9 +186,14 @@ export class TilePickingMaterial extends THREE.ShaderMaterial {
 
             void main() {
                 gl_FragColor = packDepthToRGBA(vIndex*` +
-            this.depthScalar +
+            depthScalar +
             `);
             }
         `
+
+        super({ ...options, vertexShader, fragmentShader })
+
+        this.depthScalar = depthScalar
+        this.depthThreshold = depthThreshold
     }
 }
