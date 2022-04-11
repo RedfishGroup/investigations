@@ -2,9 +2,9 @@ import * as THREE from 'three'
 
 export class ElevationShaderMaterial extends THREE.ShaderMaterial {
     constructor(options = {}) {
-        const side = options.side
-        const wireframe = options.wireframe
-        const transparent = options.transparent
+        const side = options.side || THREE.FrontSide
+        const wireframe = options.wireframe || false
+        const transparent = options.transparent || false
 
         const uniforms = {
             min: { value: options.min || 0 },

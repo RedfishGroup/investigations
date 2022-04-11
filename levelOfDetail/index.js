@@ -2,7 +2,10 @@ import * as THREE from 'three'
 
 import { GUI } from 'https://unpkg.com/dat.gui@0.7.7/build/dat.gui.module.js'
 import { OrbitControls } from 'https://unpkg.com/three@0.139.2/examples/jsm/controls/OrbitControls.js'
+
+import { Frustum } from './Frustum.js'
 import { GlobeReference } from './GlobeReference.js'
+import { CalibratedCamera } from './CalibratedCamera.js'
 import { drawXYPlane, drawWorldAxes } from './geoTools.js'
 
 import { debounced } from './debounced.js'
@@ -69,12 +72,51 @@ async function main() {
     // put in x-y plane
     drawXYPlane(scene)
 
+    // tiling renderer setup
+    let width = 300
+    let height = 200
+    const tileRenderer = new THREE.WebGLRenderer()
+    tileRenderer.setSize(width, height)
+    tileRenderer.setClearColor('#000000')
+    const tileParent = document.querySelector('#viewDiv')
+    const tileCanvas = tileRenderer.domElement
+    tileCanvas.onwheel = function (e) {
+        e.preventDefault()
+    }
+    tileParent.appendChild(tileCanvas)
+
+    // tiling camera setup
+    const tileCam = new CalibratedCamera({ width, height })
+    tileCam.position.set(0, 0, 0.29)
+    tileCam.up.set(0, 0, 1)
+    tileCam.updateMatrix()
+    tileCam.updateProjectionMatrix()
+    tileCam.lookAt(-0.4, 1, 0.4)
+
+    // camera viewing frustum
+    const frustum = new Frustum({ far: 0.2, camera: tileCam })
+    frustum.position.set(
+        tileCam.position.x,
+        tileCam.position.y,
+        tileCam.position.z
+    )
+    frustum.rotation.set(
+        tileCam.rotation.x,
+        tileCam.rotation.y,
+        tileCam.rotation.z
+    )
+
+    scene.add(frustum)
+
+    frustum.updateGeometry()
+
     // animation function
     const animate = function () {
         requestAnimationFrame(animate)
 
         controls.update()
         renderer.render(scene, camera)
+        tileRenderer.render(scene, tileCam)
     }
 
     const center = {
@@ -82,11 +124,15 @@ async function main() {
         //Latitude: 35.19251772180017,
         //Longitude: -106.42811011436379,
 
+        // Shiprock
+        Latitude: 36.69165,
+        Longitude: -108.83866,
+
         // Everest
-        Latitude: 27.9881,
-        Longitude: 86.925,
+        //Latitude: 27.9881,
+        //Longitude: 86.925,
     }
-    const zoom = 9
+    const zoom = 11
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
     const bounds = getTileBounds(x, y, z)
@@ -106,6 +152,7 @@ async function main() {
         wireframe: false,
     }
 
+    //const material = new THREE.MeshBasicMaterial(materialParams)
     const material = new ElevationShaderMaterial(materialParams)
 
     const tileTree = new XYZTileNode(x, y, z, null)
@@ -139,7 +186,7 @@ async function main() {
     lodGUI
         .add(
             {
-                add: async (foo) => {
+                add: async () => {
                     await splitAllTiles(
                         tileTree,
                         scene,
@@ -153,6 +200,16 @@ async function main() {
             'add'
         )
         .name('split all tiles')
+    lodGUI
+        .add(
+            {
+                combine: async () => {
+                    console.log('do it backwards')
+                },
+            },
+            'combine'
+        )
+        .name('combine all tiles')
 
     // start animating
     animate()
@@ -167,10 +224,10 @@ async function splitAllTiles(tileTree, scene, error, globeReference, material) {
 }
 
 async function splitNode(node, scene, martiniError, globeReference, material) {
-    if (node.threeMesh) {
-        scene.remove(node.threeMesh)
-    }
     const promises = node.getChildren().map(async (child) => {
+        if (node.threeMesh && scene.children.includes(node.threeMesh)) {
+            scene.remove(node.threeMesh)
+        }
         let mesh = await child.getThreeMesh(
             martiniError,
             globeReference.getMatrix(),
