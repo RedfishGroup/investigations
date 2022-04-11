@@ -55,7 +55,7 @@ export class XYZTileNode {
      */
     lookupNodeByXYZ(x, y, z, node = this) {
         if (node.x === x && node.y === y && node.z === z) {
-            return { found: true, node: node}
+            return { found: true, node: node }
         }
         const xChoice = Math.floor(x / (2 ** (z - node.z - 1)))
         const yChoice = Math.floor(y / (2 ** (z - node.z - 1)))
@@ -63,7 +63,7 @@ export class XYZTileNode {
         if (child) {
             return this.lookupNodeByXYZ(x, y, z, child)
         } else {
-            return { found: false, node: node}
+            return { found: false, node: node }
         }
     }
 
@@ -147,8 +147,8 @@ export class XYZTileNode {
         const bounds = getTileBounds(this.x, this.y, this.z)
         if (stretchToEdge) {
             // stretch the bounds to the edge of the tile. This is to minimize gaps in the mesh.
-            const latPadding = (bounds.north - bounds.south) / (257 )
-            const lngPadding = (bounds.east - bounds.west) / (257 )
+            const latPadding = (bounds.north - bounds.south) / (257)
+            const lngPadding = (bounds.east - bounds.west) / (257)
             bounds.north = bounds.north + latPadding
             bounds.south = bounds.south - latPadding
             bounds.east = bounds.east + lngPadding

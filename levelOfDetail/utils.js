@@ -90,28 +90,28 @@ export function padDataSetMaintainSlope(ds0) {
     for (let x = 0; x < ds.width; x++) {
         const v1 = ds.getXY(x, 1)
         const gradient = ds.getXY(x, 2) - ds.getXY(x, 1)
-        const val = v1 - gradient 
+        const val = v1 - gradient
         ds.setXY(x, 0, val)
     }
     // bottom
     for (let x = 0; x < ds.width; x++) {
         const v1 = ds.getXY(x, ds.height - 2)
         const gradient = ds.getXY(x, ds.height - 2) - ds.getXY(x, ds.height - 3)
-        const val = v1 + gradient 
+        const val = v1 + gradient
         ds.setXY(x, ds.height - 1, val)
     }
     // left
     for (let y = 0; y < ds.height; y++) {
         const v1 = ds.getXY(1, y)
         const gradient = ds.getXY(2, y) - ds.getXY(1, y)
-        const val = v1 - gradient 
+        const val = v1 - gradient
         ds.setXY(0, y, val)
     }
     // right
     for (let y = 0; y < ds.height; y++) {
         const v1 = ds.getXY(ds.width - 2, y)
         const gradient = ds.getXY(ds.width - 2, y) - ds.getXY(ds.width - 3, y)
-        const val = v1 + gradient 
+        const val = v1 + gradient
         ds.setXY(ds.width - 1, y, val)
     }
     return ds
