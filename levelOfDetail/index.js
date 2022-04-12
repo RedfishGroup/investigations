@@ -173,7 +173,7 @@ async function main() {
 
     const elevationMaterial = new ElevationShaderMaterial(materialParams)
     const depthMaterial = new DepthShaderMaterial({ side: THREE.BackSide })
-    const tileIndexMaterial = new TilePickingMaterial()
+    const tileIndexMaterial = new TilePickingMaterial({ side: THREE.BackSide })
 
     const tileTree = new XYZTileNode(x, y, z, null)
     const threeMesh = await tileTree.getThreeMesh(

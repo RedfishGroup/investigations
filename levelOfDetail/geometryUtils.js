@@ -82,6 +82,13 @@ export function geometryFromMartiniMesh(
             'elevation',
             new THREE.BufferAttribute(new Float32Array(maxPoints), 1)
         )
+        geometry.setAttribute(
+            'zoomIndex',
+            new THREE.BufferAttribute(
+                new Float32Array(maxPoints).fill(bounds.index),
+                1
+            )
+        )
 
         updateGeometry(geometry, mesh, elevation, bounds, matrix)
 
@@ -136,7 +143,7 @@ function verticesFromMartiniMesh(
 }
 
 function setIndex(geometry, indices) {
-    // update indices
+    // update face indices
     for (let j = 0; j < indices.length; j++) {
         geometry.index.setX(j, indices[j])
     }
