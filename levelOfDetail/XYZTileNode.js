@@ -62,7 +62,7 @@ export class XYZTileNode {
     /**
      *
      * @param {String} id
-     * @returns
+     * @returns {XYZTileNode} return the node with the given id, or undefined.
      */
     getNodeByID(id) {
         return XYZTileNode.#nodeIDLookup[id]
@@ -272,4 +272,13 @@ export function lookupNodeByXYZ(x, y, z, node) {
     } else {
         return { found: false, node: node }
     }
+}
+
+/**
+ *
+ * @param {String} id
+ * @returns {XYZTileNode} return the node with the given id, or undefined.
+ */
+export function getNodeByID(id) {
+    return XYZTileNode.prototype.getNodeByID(id)
 }
