@@ -91,6 +91,10 @@ async function main() {
     }
     tileParent.appendChild(tileCanvas)
 
+    // render targets setup
+    const depthTarget = new THREE.WebGLRenderTarget(width, height)
+    const indexTarget = new THREE.WebGLRenderTarget(width, height)
+
     // tiling camera setup
     const tileCam = new CalibratedCamera({ width, height })
     tileCam.position.set(-0.5, -0.5, 0.285)
@@ -116,6 +120,7 @@ async function main() {
 
     frustum.updateGeometry()
 
+    window.tilesNeedUpdate = true
     // animation function
     const animate = function () {
         requestAnimationFrame(animate)
@@ -123,16 +128,34 @@ async function main() {
         // update orbit controls
         controls.update()
 
-        // render to depth
-        scene.overrideMaterial = depthMaterial
         axes.visible = false
         frustum.visible = false
         xyPlane.visible = false
+
+        if (window.tilesNeedUpdate) {
+            // render to depth
+            scene.overrideMaterial = depthMaterial
+            tileRenderer.setRenderTarget(depthTarget)
+            tileRenderer.render(scene, tileCam)
+
+            // render tile indices
+            scene.overrideMaterial = tileIndexMaterial
+            tileRenderer.setRenderTarget(indexTarget)
+            tileRenderer.render(scene, tileCam)
+
+            // reset override material
+            scene.overrideMaterial = null
+            tileRenderer.setRenderTarget(null)
+
+            // set flag to false
+            window.tilesNeedUpdate = false
+        }
+
         tileRenderer.render(scene, tileCam)
+
         axes.visible = true
         frustum.visible = true
         xyPlane.visible = true
-        scene.overrideMaterial = null
 
         // regular render
         renderer.render(scene, camera)
