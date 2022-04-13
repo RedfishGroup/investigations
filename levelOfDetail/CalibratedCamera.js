@@ -71,6 +71,7 @@ export class CalibratedCamera extends THREE.Camera {
         this.updateScreenToCameraMatrix()
 
         this.fov = 2 * Math.atan(this.width / 2 / this.fx) * (180 / Math.PI)
+        this.vfov = 2 * Math.atan(this.height / 2 / this.fy) * (180 / Math.PI)
     }
 
     updateScreenToCameraMatrix() {

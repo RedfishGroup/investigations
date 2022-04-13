@@ -273,11 +273,9 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
             depthTexture: new THREE.Uniform(
                 options.depthTexture || new THREE.Texture()
             ),
-            zoomTexture: new THREE.Uniform(
-                options.zoomTexture || new THREE.Texture()
-            ),
             height: { value: options.height || 1 },
             scale: { value: options.scale || 1 },
+            fov: { value: options.fov || 1 },
         }
 
         const vertexShader = `
@@ -296,14 +294,13 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
             }
         `
 
-        const fragmentShader =
-            `
+        const fragmentShader = `
             precision highp float;
 
+            uniform float fov;
             uniform float scale;
             uniform float height;
             uniform sampler2D depthTexture;
-            uniform sampler2D zoomTexture;
 
             varying vec4 vScreenCoords;
             varying mat4 vProjectionMatrix;
@@ -328,50 +325,18 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
             }
 
             // error calculation functions
-            // error in meters per pixel at the equator
-            const float zoomError[21] = float[21](
-                156412., 78206., 39103., 19551.,
-                9776., 4888., 2444., 1222., 610.984,
-                305.492, 152.746, 76.373, 38.187,
-                19.093, 9.547, 4.773, 2.387, 1.193,
-                0.596, 0.298, 0.149
-            );
-
             float getPixelError(const in float d) {
-                float vfov = 2. * atan(1. / vProjectionMatrix[2][2]);
-                float theta = vfov / height;
+                float theta = fov / height;
                 float epsilon = 2. * d * tan(theta / 2.);
                 return epsilon;
             }
 
-            float zoomCorrection(const in float error, const in float zoom) {
-                float z_err = zoomError[int(zoom)];
-
-                float newZoom = zoom;
-                if(error > z_err) {
-                    // tile zoom can decrease
-                    // march down in zoomError
-                    // to find correct zoom level
-                    for(int i=int(zoom); i>=0; i--) {
-                        if(error > zoomError[i]) {
-                            newZoom = float(i);
-                        } else {
-                            break;
-                        }
-                    }
-                } else if(error < z_err) {
-                    // tile zoom can increase
-                    // march up in zoomError
-                    // to find correct zoom level
-                    for(int i=int(zoom); i<21; i++) {
-                        if(error < zoomError[i]) {
-                            newZoom = float(i);
-                        } else {
-                            break;
-                        }
-                    }
-                }
-
+            float zoomCorrection(const in float error) {
+                float PI = 3.141592;
+                float radiusOfEarth = 6378100.;
+                float error2 = abs(error);
+                float newZoom = log2((2.*PI*radiusOfEarth) / (256. * error2)) ;
+                newZoom = round(newZoom);
                 return newZoom;
             }
 
@@ -383,18 +348,11 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
 
                 vec4 clampedCoords = clampTex * vScreenCoords;
 
-                float depth = unpackRGBAToNumber(texture2DProj(depthTexture, clampedCoords))*` +
-            inverseDepthScalarString +
-            `;
-                float zoom = unpackRGBAToNumber(texture2DProj(zoomTexture, clampedCoords))*` +
-            inverseDepthScalarString +
-            `;
+                float depth = unpackRGBAToNumber(texture2DProj(depthTexture, clampedCoords)) * ${inverseDepthScalarString};
                 float error = getPixelError(depth * scale);
-                float newZoom = zoomCorrection(error, zoom);
-                gl_FragColor = packNumberToRGBA(newZoom *` +
-            depthScalarString +
-            `);
-                //gl_FragColor = vec4(error/256., error/256., error/256., 1.);
+                float newZoom = zoomCorrection(error);
+
+                gl_FragColor = packNumberToRGBA(newZoom * ${depthScalarString});
             }
         `
 
@@ -411,13 +369,6 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
     setDepthTexture(texture) {
         if (texture && texture.isTexture) {
             this.uniforms.depthTexture = new THREE.Uniform(texture)
-            this.uniformsNeedUpdate = true
-        }
-    }
-
-    setZoomTexture(texture) {
-        if (texture && texture.isTexture) {
-            this.uniforms.zoomTexture = new THREE.Uniform(texture)
             this.uniformsNeedUpdate = true
         }
     }
