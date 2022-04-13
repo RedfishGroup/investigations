@@ -88,7 +88,6 @@ async function main() {
     // render targets setup
     const zoomTarget = new THREE.WebGLRenderTarget(width, height)
     const depthTarget = new THREE.WebGLRenderTarget(width, height)
-    const indexTarget = new THREE.WebGLRenderTarget(width, height)
 
     // tiling camera setup
     const tileCam = new CalibratedCamera({ width, height })
@@ -167,6 +166,7 @@ async function main() {
     const tileIndexMaterial = new TilePickingMaterial(materialParams)
     const tileIndexColorMaterial = new TileIndexColorMaterial(materialParams)
     const tileNeedsUpdateMaterial = new TileNeedsUpdateMaterial({
+        fov: tileCam.vfov * (Math.PI / 180),
         side: THREE.BackSide,
         scale: 1 / globeReference.getScale(),
         height,
@@ -293,7 +293,7 @@ async function main() {
                     unpackPixel(m, 0, zoomData, tileCam.width, tileCam.height)
             )
             console.log(
-                'bottom right corner',
+                'center',
                 'tile index: ' +
                     unpackPixel(
                         0.5,
