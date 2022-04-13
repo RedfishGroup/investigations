@@ -372,7 +372,7 @@ async function combineAllTiles(
                 let children = parents[i].getChildren()
                 for (let j in children) {
                     scene.remove(children[j].threeMesh)
-                    //tileTree.removeNode(children[j])
+                    children[j].removeNode()
                 }
                 scene.add(parents[i].threeMesh)
             }

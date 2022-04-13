@@ -221,6 +221,34 @@ export class XYZTileNode {
     }
 
     /**
+     * Remove a node from the tree.
+     * 
+     * @param {XYZTileNode} node 
+     * @returns 
+     */
+    removeNode(node = this) {
+        if (node) {
+            if (node.parent) {
+                node.parent.children = node.parent.children.filter((child) => {
+                    return child !== node
+                })
+            }
+            delete XYZTileNode.#nodeIDLookup[node.id]
+            node.threeMesh = undefined // for garbage collection
+            node.elevation = undefined
+            node.parent = undefined
+            if (node.children) {
+                node.children.forEach((child) => {
+                    this.removeNode(child)
+                })
+            }
+            node.children = undefined
+        } else{
+            throw('node not found', node)
+        }
+    }
+
+    /**
      * Get all the children of this node, and create them if they don't exist.
      * @returns {[XYZTileNode, XYZTileNode, ...]}
      */
