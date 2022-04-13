@@ -13,11 +13,14 @@ import { debounced } from './debounced.js'
 import { updateGeometry } from './geometryUtils.js'
 
 import {
+    unpackPixel,
+    renderToUint8Array,
     DepthShaderMaterial,
     TilePickingMaterial,
+    ZoomPickingMaterial,
     ElevationShaderMaterial,
     TileNeedsUpdateMaterial,
-    ZoomPickingMaterial,
+    TileIndexColorMaterial,
 } from './materialUtils.js'
 
 import { getTileBounds, latLngToSlippyXYZ } from './utils.js'
@@ -69,17 +72,6 @@ async function main() {
         camera.updateProjectionMatrix()
     }
 
-    // create scene
-    const scene = new THREE.Scene()
-
-    // put in axes
-    const axes = new THREE.AxesHelper(2)
-    scene.add(axes)
-
-    // put in x-y plane
-    const xyPlane = getXYPlane()
-    scene.add(xyPlane)
-
     // tiling renderer setup
     let width = 300
     let height = 200
@@ -101,12 +93,23 @@ async function main() {
     // tiling camera setup
     const tileCam = new CalibratedCamera({ width, height })
     //tileCam.position.set(-0.5, -0.5, 0.285)
-    tileCam.position.set(2, 2, 1.5)
+    tileCam.position.set(1.8, 1.8, 1)
     tileCam.up.set(0, 0, 1)
     tileCam.updateMatrix()
     tileCam.updateProjectionMatrix()
     //tileCam.lookAt(-0.5, 0.5, 0.3)
-    tileCam.lookAt(0, 0, 0)
+    tileCam.lookAt(0.1, 0.1, 0)
+
+    // create scene
+    const scene = new THREE.Scene()
+
+    // put in axes
+    const axes = new THREE.AxesHelper(2)
+    scene.add(axes)
+
+    // put in x-y plane
+    const xyPlane = getXYPlane()
+    scene.add(xyPlane)
 
     // camera viewing frustum
     const frustum = new Frustum({ far: 0.2, camera: tileCam })
@@ -124,54 +127,6 @@ async function main() {
     scene.add(frustum)
 
     frustum.updateGeometry()
-
-    window.tilesNeedUpdate = true
-    // animation function
-    const animate = function () {
-        requestAnimationFrame(animate)
-
-        // update orbit controls
-        controls.update()
-
-        axes.visible = false
-        frustum.visible = false
-        xyPlane.visible = false
-
-        if (window.tilesNeedUpdate) {
-            // render to depth
-            scene.overrideMaterial = depthMaterial
-            tileRenderer.setRenderTarget(depthTarget)
-            tileRenderer.render(scene, tileCam)
-
-            // render zoom level
-            scene.overrideMaterial = zoomMaterial
-            tileRenderer.setRenderTarget(zoomTarget)
-            tileRenderer.render(scene, tileCam)
-
-            // render tile indices
-            scene.overrideMaterial = tileIndexMaterial
-            tileRenderer.setRenderTarget(indexTarget)
-            tileRenderer.render(scene, tileCam)
-
-            // reset override material
-            scene.overrideMaterial = null
-            tileRenderer.setRenderTarget(null)
-
-            // set flag to false
-            window.tilesNeedUpdate = false
-        }
-
-        scene.overrideMaterial = tileNeedsUpdateMaterial
-        tileRenderer.render(scene, tileCam)
-        scene.overrideMaterial = null
-
-        axes.visible = true
-        frustum.visible = true
-        xyPlane.visible = true
-
-        // regular render
-        renderer.render(scene, camera)
-    }
 
     const center = {
         // Albuquerque
@@ -207,11 +162,14 @@ async function main() {
     }
 
     const elevationMaterial = new ElevationShaderMaterial(materialParams)
-    const zoomMaterial = new ZoomPickingMaterial({ side: THREE.BackSide })
-    const depthMaterial = new DepthShaderMaterial({ side: THREE.BackSide })
-    const tileIndexMaterial = new TilePickingMaterial({ side: THREE.BackSide })
+    const zoomMaterial = new ZoomPickingMaterial(materialParams)
+    const depthMaterial = new DepthShaderMaterial(materialParams)
+    const tileIndexMaterial = new TilePickingMaterial(materialParams)
+    const tileIndexColorMaterial = new TileIndexColorMaterial(materialParams)
     const tileNeedsUpdateMaterial = new TileNeedsUpdateMaterial({
         side: THREE.BackSide,
+        scale: 1 / globeReference.getScale(),
+        height,
         zoomTexture: zoomTarget.texture,
         depthTexture: depthTarget.texture,
     })
@@ -270,6 +228,108 @@ async function main() {
             'combine'
         )
         .name('combine all tiles')
+
+    window.tilesNeedUpdate = true
+    // animation function
+    const animate = function () {
+        requestAnimationFrame(animate)
+
+        // update orbit controls
+        controls.update()
+
+        axes.visible = false
+        frustum.visible = false
+        xyPlane.visible = false
+
+        if (window.tilesNeedUpdate) {
+            // render to depth
+            scene.overrideMaterial = depthMaterial
+            tileRenderer.setRenderTarget(depthTarget)
+            tileRenderer.render(scene, tileCam)
+
+            // render zoom level
+            scene.overrideMaterial = zoomMaterial
+            tileRenderer.setRenderTarget(zoomTarget)
+            tileRenderer.render(scene, tileCam)
+
+            // reset render target
+            tileRenderer.setRenderTarget(null)
+
+            // render tile indices
+            scene.overrideMaterial = tileIndexMaterial
+            let indexData = renderToUint8Array(tileRenderer, scene, tileCam)
+
+            scene.overrideMaterial = tileNeedsUpdateMaterial
+            let zoomData = renderToUint8Array(tileRenderer, scene, tileCam)
+
+            // test
+            let m = 0.9999
+            console.log(
+                'top left corner',
+                'tile index: ' +
+                    unpackPixel(0, m, indexData, tileCam.width, tileCam.height),
+                'zoom correction: ' +
+                    unpackPixel(0, m, zoomData, tileCam.width, tileCam.height)
+            )
+            console.log(
+                'top right corner',
+                'tile index: ' +
+                    unpackPixel(m, m, indexData, tileCam.width, tileCam.height),
+                'zoom correction: ' +
+                    unpackPixel(m, m, zoomData, tileCam.width, tileCam.height)
+            )
+            console.log(
+                'bottom left corner',
+                'tile index: ' +
+                    unpackPixel(0, 0, indexData, tileCam.width, tileCam.height),
+                'zoom correction: ' +
+                    unpackPixel(0, 0, zoomData, tileCam.width, tileCam.height)
+            )
+            console.log(
+                'bottom right corner',
+                'tile index: ' +
+                    unpackPixel(m, 0, indexData, tileCam.width, tileCam.height),
+                'zoom correction: ' +
+                    unpackPixel(m, 0, zoomData, tileCam.width, tileCam.height)
+            )
+            console.log(
+                'bottom right corner',
+                'tile index: ' +
+                    unpackPixel(
+                        0.5,
+                        0.5,
+                        indexData,
+                        tileCam.width,
+                        tileCam.height
+                    ),
+                'zoom correction: ' +
+                    unpackPixel(
+                        0.5,
+                        0.5,
+                        zoomData,
+                        tileCam.width,
+                        tileCam.height
+                    )
+            )
+
+            // reset override material
+            scene.overrideMaterial = null
+
+            // set flag to false
+            window.tilesNeedUpdate = false
+        }
+
+        scene.overrideMaterial = tileIndexColorMaterial
+        tileRenderer.render(scene, tileCam)
+        scene.overrideMaterial = null
+
+        axes.visible = true
+        frustum.visible = true
+        xyPlane.visible = true
+
+        // regular render
+        renderer.render(scene, camera)
+    }
 
     // start animating
     animate()

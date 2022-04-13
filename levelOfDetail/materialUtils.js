@@ -1,7 +1,9 @@
 import * as THREE from 'three'
 
-const depthScalar = '1. / (256. * 256.)'
-const inverseDepthScalar = '256. * 256.'
+const depthScalar = 1 / (256 * 256)
+const depthScalarString = '1. / (256. * 256.)'
+const inverseDepthScalar = 256 * 256
+const inverseDepthScalarString = '256. * 256.'
 const depthThreshold = 0.000003
 
 export class ElevationShaderMaterial extends THREE.ShaderMaterial {
@@ -124,7 +126,7 @@ export class DepthShaderMaterial extends THREE.ShaderMaterial {
         
             void main() {
                 gl_FragColor = packDepthToRGBA(distance(cameraPosition, vPosition)*` +
-            depthScalar +
+            depthScalarString +
             `);
             }
         `
@@ -185,7 +187,7 @@ export class TilePickingMaterial extends THREE.ShaderMaterial {
 
             void main() {
                 gl_FragColor = packNumberToRGBA(vtileIndex*` +
-            depthScalar +
+            depthScalarString +
             `);
             }
         `
@@ -246,7 +248,7 @@ export class ZoomPickingMaterial extends THREE.ShaderMaterial {
 
             void main() {
                 gl_FragColor = packNumberToRGBA(vZoomLevel*` +
-            depthScalar +
+            depthScalarString +
             `);
             }
         `
@@ -274,6 +276,8 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
             zoomTexture: new THREE.Uniform(
                 options.zoomTexture || new THREE.Texture()
             ),
+            height: { value: options.height || 1 },
+            scale: { value: options.scale || 1 },
         }
 
         const vertexShader = `
@@ -286,6 +290,7 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
                 vec4 screenCoords = projectionMatrix * modelViewMatrix * vec4(position, 1.);
 
                 vScreenCoords = screenCoords;
+                vProjectionMatrix = projectionMatrix;
 
                 gl_Position = screenCoords;
             }
@@ -296,7 +301,7 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
             precision highp float;
 
             uniform float scale;
-            uniform float cameraHeight;
+            uniform float height;
             uniform sampler2D depthTexture;
             uniform sampler2D zoomTexture;
 
@@ -334,24 +339,40 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
 
             float getPixelError(const in float d) {
                 float vfov = 2. * atan(1. / vProjectionMatrix[2][2]);
-                float theta = vfov / cameraHeight;
-                float epsilon = 2. * d * atan(theta / 2.);
-                return epsilon * scale;
+                float theta = vfov / height;
+                float epsilon = 2. * d * tan(theta / 2.);
+                return epsilon;
             }
 
-            float zoomCorrection(const in float error, const in int zoom) {
-                float z_err = zoomError[zoom];
+            float zoomCorrection(const in float error, const in float zoom) {
+                float z_err = zoomError[int(zoom)];
 
-                float correction;
+                float newZoom = zoom;
                 if(error > z_err) {
-                    //
+                    // tile zoom can decrease
+                    // march down in zoomError
+                    // to find correct zoom level
+                    for(int i=int(zoom); i>=0; i--) {
+                        if(error > zoomError[i]) {
+                            newZoom = float(i);
+                        } else {
+                            break;
+                        }
+                    }
                 } else if(error < z_err) {
-                    //
-                } else {
-                    //
+                    // tile zoom can increase
+                    // march up in zoomError
+                    // to find correct zoom level
+                    for(int i=int(zoom); i<21; i++) {
+                        if(error < zoomError[i]) {
+                            newZoom = float(i);
+                        } else {
+                            break;
+                        }
+                    }
                 }
 
-                return correction;
+                return newZoom;
             }
 
             void main() {
@@ -363,12 +384,17 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
                 vec4 clampedCoords = clampTex * vScreenCoords;
 
                 float depth = unpackRGBAToNumber(texture2DProj(depthTexture, clampedCoords))*` +
-            inverseDepthScalar +
+            inverseDepthScalarString +
             `;
                 float zoom = unpackRGBAToNumber(texture2DProj(zoomTexture, clampedCoords))*` +
-            inverseDepthScalar +
+            inverseDepthScalarString +
             `;
-                gl_FragColor = vec4(zoom*10./256., zoom*10./256., zoom*10./256., 1.);
+                float error = getPixelError(depth * scale);
+                float newZoom = zoomCorrection(error, zoom);
+                gl_FragColor = packNumberToRGBA(newZoom *` +
+            depthScalarString +
+            `);
+                //gl_FragColor = vec4(error/256., error/256., error/256., 1.);
             }
         `
 
@@ -395,4 +421,123 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
             this.uniformsNeedUpdate = true
         }
     }
+}
+
+export class TileIndexColorMaterial extends THREE.ShaderMaterial {
+    constructor(options = {}) {
+        const side = options.side || THREE.FrontSide
+        const wireframe = false
+        const transparent = false
+
+        const vertexShader = `
+            precision highp float;
+
+            attribute float tileIndex;
+
+            varying float vTileIndex;
+
+            void main() {
+                vTileIndex = tileIndex;
+
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);
+            }
+        `
+
+        const fragmentShader = `
+            precision highp float;
+
+            varying float vTileIndex;
+
+            const float scale = 50.;
+            const vec3 colors[6] = vec3[6](
+                vec3(1., 0., 0.), vec3(1., 0.5, 0.), vec3(1., 1., 0.),
+                vec3(0., 1., 0.5), vec3(0., 0.5, 1.), vec3(0.5, 0., 1.)
+            );
+
+            vec3 getColor(const in float tileIndex) {
+                int length = colors.length();
+                float p = float(length) * (mod(tileIndex, scale) / scale);
+
+                int indexStart = int(floor(p));
+                int indexEnd = indexStart + 1;
+                if(indexEnd >= length) {
+                    indexEnd = 0;
+                }
+
+                float percent = (p) - floor(p);
+
+                return mix(colors[indexStart], colors[indexEnd], percent);
+            }
+
+            void main() {
+                gl_FragColor = vec4(getColor(vTileIndex), 1.);
+            }
+        `
+
+        super({
+            side,
+            wireframe,
+            transparent,
+            vertexShader,
+            fragmentShader,
+        })
+    }
+}
+
+/**
+ * Unpacks a value at pixel that has been RGBA encoded
+ *
+ * @param {int} x - pixel x value from 0 to 1
+ * @param {int} y - pixel y value from 0 to 1
+ * @param {Uint8Array} data - array data from render
+ * @param {int} width - width of array
+ * @param {int} height - height of array
+ *
+ * @returns {float} - unpacked value
+ */
+export function unpackPixel(x, y, data, width, height) {
+    let indexX = Math.floor(x * width)
+    let indexY = Math.floor(y * height)
+    let index = 4 * (indexX + indexY * width)
+
+    let r = data[index]
+    let g = data[index + 1]
+    let b = data[index + 2]
+    let a = data[index + 3]
+
+    let UnpackDownscale = 1 / 256
+    let UnpackFactors = new THREE.Vector4(
+        1 / (256 * 256 * 256),
+        1 / (256 * 256),
+        1 / 256,
+        1
+    ).multiplyScalar(UnpackDownscale)
+
+    return new THREE.Vector4(r, g, b, a).dot(UnpackFactors) / depthScalar
+}
+
+/**
+ * Renders pixels to a Uint8Array
+ *
+ * @param {THREE.WebGLRenderer} renderer
+ * @param {THREE.Scene} scene
+ * @param {CalibratedCamera} camera - either calibrated camera or THREE.Camera with width and height values
+ *
+ * @returns {Uint8Array}
+ */
+export function renderToUint8Array(renderer, scene, camera) {
+    renderer.render(scene, camera)
+    let gl = renderer.getContext()
+    let data = new Uint8Array(camera.width * camera.height * 4)
+    gl.readPixels(
+        0,
+        0,
+        camera.width,
+        camera.height,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        data
+    )
+
+    return data
 }
