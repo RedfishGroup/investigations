@@ -1,5 +1,8 @@
 import * as THREE from 'three'
-import { ShaderMaterial } from 'three'
+
+const depthScalar = '1. / (256. * 256.)'
+const inverseDepthScalar = '256. * 256.'
+const depthThreshold = 0.000003
 
 export class ElevationShaderMaterial extends THREE.ShaderMaterial {
     constructor(options = {}) {
@@ -83,9 +86,6 @@ export class DepthShaderMaterial extends THREE.ShaderMaterial {
         const wireframe = false
         const transparent = false
 
-        const depthScalar = 1 / (256 * 256)
-        const depthThreshold = 0.000003
-
         const vertexShader = `
             precision highp float;
 
@@ -136,9 +136,6 @@ export class DepthShaderMaterial extends THREE.ShaderMaterial {
             vertexShader,
             fragmentShader,
         })
-
-        this.depthScalar = depthScalar
-        this.depthThreshold = depthThreshold
     }
 }
 
@@ -148,18 +145,15 @@ export class TilePickingMaterial extends THREE.ShaderMaterial {
         const wireframe = false
         const transparent = false
 
-        const depthScalar = 1 / (256 * 256)
-        const depthThreshold = 0.000003
-
         const vertexShader = `
             precision highp float;
 
-            attribute float zoomIndex;
+            attribute float tileIndex;
 
-            varying float vZoomIndex;
+            varying float vtileIndex;
 
             void main() {
-                vZoomIndex = zoomIndex;
+                vtileIndex = tileIndex;
 
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);
             }
@@ -169,7 +163,7 @@ export class TilePickingMaterial extends THREE.ShaderMaterial {
             `
             precision highp float;
 
-            varying float vZoomIndex;
+            varying float vtileIndex;
 
             const float PackUpscale = 256. / 255.; // fraction -> 0..1 (including 1)
             const float UnpackDownscale = 255. / 256.; // 0..1 -> fraction (excluding 1)
@@ -190,7 +184,7 @@ export class TilePickingMaterial extends THREE.ShaderMaterial {
             }
 
             void main() {
-                gl_FragColor = packNumberToRGBA(vZoomIndex*` +
+                gl_FragColor = packNumberToRGBA(vtileIndex*` +
             depthScalar +
             `);
             }
@@ -203,9 +197,67 @@ export class TilePickingMaterial extends THREE.ShaderMaterial {
             vertexShader,
             fragmentShader,
         })
+    }
+}
 
-        this.depthScalar = depthScalar
-        this.depthThreshold = depthThreshold
+export class ZoomPickingMaterial extends THREE.ShaderMaterial {
+    constructor(options = {}) {
+        const side = options.side || THREE.FrontSide
+        const wireframe = false
+        const transparent = false
+
+        const vertexShader = `
+            precision highp float;
+
+            attribute float zoom;
+
+            varying float vZoomLevel;
+
+            void main() {
+                vZoomLevel = zoom;
+
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);
+            }
+        `
+
+        const fragmentShader =
+            `
+            precision highp float;
+
+            varying float vZoomLevel;
+
+            const float PackUpscale = 256. / 255.; // fraction -> 0..1 (including 1)
+            const float UnpackDownscale = 255. / 256.; // 0..1 -> fraction (excluding 1)
+        
+            const vec3 PackFactors = vec3(256. * 256. * 256., 256. * 256., 256.);
+            const vec4 UnpackFactors = UnpackDownscale / vec4(PackFactors, 1.);
+        
+            const float ShiftRight8 = 1. / 256.;
+        
+            vec4 packNumberToRGBA(const in float v) {
+                vec4 r = vec4(fract(v * PackFactors), v);
+                r.yzw -= r.xyz * ShiftRight8; // tidy overflow
+                return r * PackUpscale;
+            }
+        
+            float unpackRGBAToNumber(const in vec4 v) {
+                return dot(v, UnpackFactors);
+            }
+
+            void main() {
+                gl_FragColor = packNumberToRGBA(vZoomLevel*` +
+            depthScalar +
+            `);
+            }
+        `
+
+        super({
+            side,
+            wireframe,
+            transparent,
+            vertexShader,
+            fragmentShader,
+        })
     }
 }
 
@@ -215,20 +267,26 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
         const wireframe = false
         const transparent = false
 
-        const depthScalar = 1 / (256 * 256)
-        const depthThreshold = 0.000003
+        const uniforms = {
+            depthTexture: new THREE.Uniform(
+                options.depthTexture || new THREE.Texture()
+            ),
+            zoomTexture: new THREE.Uniform(
+                options.zoomTexture || new THREE.Texture()
+            ),
+        }
 
         const vertexShader = `
             precision highp float;
 
-            attribute float zoomIndex;
-
-            varying float vZoomIndex;
+            varying vec4 vScreenCoords;
 
             void main() {
-                vZoomIndex = zoomIndex;
+                vec4 screenCoords = projectionMatrix * modelViewMatrix * vec4(position, 1.);
 
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);
+                vScreenCoords = screenCoords;
+
+                gl_Position = screenCoords;
             }
         `
 
@@ -236,7 +294,10 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
             `
             precision highp float;
 
-            varying float vZoomIndex;
+            uniform sampler2D depthTexture;
+            uniform sampler2D zoomTexture;
+
+            varying vec4 vScreenCoords;
 
             const float PackUpscale = 256. / 255.; // fraction -> 0..1 (including 1)
             const float UnpackDownscale = 255. / 256.; // 0..1 -> fraction (excluding 1)
@@ -257,21 +318,44 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
             }
 
             void main() {
-                gl_FragColor = packNumberToRGBA(vZoomIndex*` +
-            depthScalar +
-            `);
+                mat4 clampTex = mat4(0.5,0.0,0.0,0.0,
+                                     0.0,0.5,0.0,0.0,
+                                     0.0,0.0,0.5,0.0,
+                                     0.5,0.5,0.5,1.0);
+
+                vec4 clampedCoords = clampTex * vScreenCoords;
+
+                float depth = unpackRGBAToNumber(texture2DProj(depthTexture, clampedCoords))*` +
+            inverseDepthScalar +
+            `;
+                float zoom = unpackRGBAToNumber(texture2DProj(zoomTexture, clampedCoords))*` +
+            inverseDepthScalar +
+            `;
+                gl_FragColor = vec4(zoom*10./256., zoom*10./256., zoom*10./256., 1.);
             }
         `
 
         super({
             side,
+            uniforms,
             wireframe,
             transparent,
             vertexShader,
             fragmentShader,
         })
+    }
 
-        this.depthScalar = depthScalar
-        this.depthThreshold = depthThreshold
+    setDepthTexture(texture) {
+        if (texture && texture.isTexture) {
+            this.uniforms.depthTexture = new THREE.Uniform(texture)
+            this.uniformsNeedUpdate = true
+        }
+    }
+
+    setZoomTexture(texture) {
+        if (texture && texture.isTexture) {
+            this.uniforms.zoomTexture = new THREE.Uniform(texture)
+            this.uniformsNeedUpdate = true
+        }
     }
 }

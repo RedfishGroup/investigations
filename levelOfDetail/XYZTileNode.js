@@ -119,6 +119,9 @@ export class XYZTileNode {
      */
     getBounds() {
         const bounds = getTileBounds(this.x, this.y, this.z)
+        bounds.x = this.x
+        bounds.y = this.y
+        bounds.z = this.z
         bounds.index = this.id
         if (this.PAD_SIDES_TO_REMOVE_SEAMS) {
             // stretch the bounds to the edge of the tile. This is to minimize gaps in the mesh.

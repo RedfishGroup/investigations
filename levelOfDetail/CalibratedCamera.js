@@ -12,7 +12,7 @@ export class CalibratedCamera extends THREE.Camera {
         this.height = options.height || 400
         this.width = options.width || 400
         this.near = options.near || 0.01
-        this.far = options.far || 20
+        this.far = options.far || 100
 
         this.initVals = {
             fx: this.fx,

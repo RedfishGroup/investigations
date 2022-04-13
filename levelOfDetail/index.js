@@ -16,6 +16,8 @@ import {
     DepthShaderMaterial,
     TilePickingMaterial,
     ElevationShaderMaterial,
+    TileNeedsUpdateMaterial,
+    ZoomPickingMaterial,
 } from './materialUtils.js'
 
 import { getTileBounds, latLngToSlippyXYZ } from './utils.js'
@@ -92,16 +94,19 @@ async function main() {
     tileParent.appendChild(tileCanvas)
 
     // render targets setup
+    const zoomTarget = new THREE.WebGLRenderTarget(width, height)
     const depthTarget = new THREE.WebGLRenderTarget(width, height)
     const indexTarget = new THREE.WebGLRenderTarget(width, height)
 
     // tiling camera setup
     const tileCam = new CalibratedCamera({ width, height })
-    tileCam.position.set(-0.5, -0.5, 0.285)
+    //tileCam.position.set(-0.5, -0.5, 0.285)
+    tileCam.position.set(2, 2, 1.5)
     tileCam.up.set(0, 0, 1)
     tileCam.updateMatrix()
     tileCam.updateProjectionMatrix()
-    tileCam.lookAt(-0.5, 0.5, 0.3)
+    //tileCam.lookAt(-0.5, 0.5, 0.3)
+    tileCam.lookAt(0, 0, 0)
 
     // camera viewing frustum
     const frustum = new Frustum({ far: 0.2, camera: tileCam })
@@ -138,6 +143,11 @@ async function main() {
             tileRenderer.setRenderTarget(depthTarget)
             tileRenderer.render(scene, tileCam)
 
+            // render zoom level
+            scene.overrideMaterial = zoomMaterial
+            tileRenderer.setRenderTarget(zoomTarget)
+            tileRenderer.render(scene, tileCam)
+
             // render tile indices
             scene.overrideMaterial = tileIndexMaterial
             tileRenderer.setRenderTarget(indexTarget)
@@ -151,7 +161,9 @@ async function main() {
             window.tilesNeedUpdate = false
         }
 
+        scene.overrideMaterial = tileNeedsUpdateMaterial
         tileRenderer.render(scene, tileCam)
+        scene.overrideMaterial = null
 
         axes.visible = true
         frustum.visible = true
@@ -195,8 +207,14 @@ async function main() {
     }
 
     const elevationMaterial = new ElevationShaderMaterial(materialParams)
+    const zoomMaterial = new ZoomPickingMaterial({ side: THREE.BackSide })
     const depthMaterial = new DepthShaderMaterial({ side: THREE.BackSide })
     const tileIndexMaterial = new TilePickingMaterial({ side: THREE.BackSide })
+    const tileNeedsUpdateMaterial = new TileNeedsUpdateMaterial({
+        side: THREE.BackSide,
+        zoomTexture: zoomTarget.texture,
+        depthTexture: depthTarget.texture,
+    })
 
     const tileTree = new XYZTileNode(x, y, z, null)
     const threeMesh = await tileTree.getThreeMesh(
@@ -262,7 +280,9 @@ async function splitAllTiles(tileTree, scene, error, globeReference, material) {
         tileTree.getLeafNodes().map((node) => {
             return splitNode(node, scene, error, globeReference, material)
         })
-    )
+    ).then(() => {
+        window.tilesNeedUpdate = true
+    })
 }
 
 async function splitNode(node, scene, martiniError, globeReference, material) {
