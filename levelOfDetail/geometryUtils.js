@@ -83,7 +83,14 @@ export function geometryFromMartiniMesh(
             new THREE.BufferAttribute(new Float32Array(maxPoints), 1)
         )
         geometry.setAttribute(
-            'zoomIndex',
+            'zoom',
+            new THREE.BufferAttribute(
+                new Float32Array(maxPoints).fill(bounds.z),
+                1
+            )
+        )
+        geometry.setAttribute(
+            'tileIndex',
             new THREE.BufferAttribute(
                 new Float32Array(maxPoints).fill(bounds.index),
                 1
