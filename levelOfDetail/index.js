@@ -85,8 +85,7 @@ async function main() {
     }
     tileParent.appendChild(tileCanvas)
 
-    // render targets setup
-    const zoomTarget = new THREE.WebGLRenderTarget(width, height)
+    // render target setup
     const depthTarget = new THREE.WebGLRenderTarget(width, height)
 
     // tiling camera setup
@@ -140,7 +139,7 @@ async function main() {
         // Latitude: 27.9881,
         // Longitude: 86.925,
     }
-    const zoom = 11
+    const zoom = 10
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
     const bounds = getTileBounds(x, y, z)
@@ -170,7 +169,6 @@ async function main() {
         side: THREE.BackSide,
         scale: 1 / globeReference.getScale(),
         height,
-        zoomTexture: zoomTarget.texture,
         depthTexture: depthTarget.texture,
     })
 
@@ -222,7 +220,14 @@ async function main() {
         .add(
             {
                 combine: async () => {
-                    console.log('do it backwards')
+                    await combineAllTiles(
+                        tileTree,
+                        scene,
+                        martiniParams.error,
+                        globeReference,
+                        elevationMaterial
+                    )
+                    console.log('done', tileTree, tileTree.toString())
                 },
             },
             'combine'
@@ -247,11 +252,6 @@ async function main() {
             tileRenderer.setRenderTarget(depthTarget)
             tileRenderer.render(scene, tileCam)
 
-            // render zoom level
-            scene.overrideMaterial = zoomMaterial
-            tileRenderer.setRenderTarget(zoomTarget)
-            tileRenderer.render(scene, tileCam)
-
             // reset render target
             tileRenderer.setRenderTarget(null)
 
@@ -259,58 +259,12 @@ async function main() {
             scene.overrideMaterial = tileIndexMaterial
             let indexData = renderToUint8Array(tileRenderer, scene, tileCam)
 
+            // render zoom correction data
             scene.overrideMaterial = tileNeedsUpdateMaterial
             let zoomData = renderToUint8Array(tileRenderer, scene, tileCam)
 
             // test
-            let m = 0.9999
-            console.log(
-                'top left corner',
-                'tile index: ' +
-                    unpackPixel(0, m, indexData, tileCam.width, tileCam.height),
-                'zoom correction: ' +
-                    unpackPixel(0, m, zoomData, tileCam.width, tileCam.height)
-            )
-            console.log(
-                'top right corner',
-                'tile index: ' +
-                    unpackPixel(m, m, indexData, tileCam.width, tileCam.height),
-                'zoom correction: ' +
-                    unpackPixel(m, m, zoomData, tileCam.width, tileCam.height)
-            )
-            console.log(
-                'bottom left corner',
-                'tile index: ' +
-                    unpackPixel(0, 0, indexData, tileCam.width, tileCam.height),
-                'zoom correction: ' +
-                    unpackPixel(0, 0, zoomData, tileCam.width, tileCam.height)
-            )
-            console.log(
-                'bottom right corner',
-                'tile index: ' +
-                    unpackPixel(m, 0, indexData, tileCam.width, tileCam.height),
-                'zoom correction: ' +
-                    unpackPixel(m, 0, zoomData, tileCam.width, tileCam.height)
-            )
-            console.log(
-                'center',
-                'tile index: ' +
-                    unpackPixel(
-                        0.5,
-                        0.5,
-                        indexData,
-                        tileCam.width,
-                        tileCam.height
-                    ),
-                'zoom correction: ' +
-                    unpackPixel(
-                        0.5,
-                        0.5,
-                        zoomData,
-                        tileCam.width,
-                        tileCam.height
-                    )
-            )
+            readTileData(indexData, zoomData, tileCam.width, tileCam.height)
 
             // reset override material
             scene.overrideMaterial = null
@@ -333,6 +287,35 @@ async function main() {
 
     // start animating
     animate()
+}
+
+async function readTileData(indexData, zoomData, width, height) {
+    let m = 0.9999
+    console.log(
+        'top left corner',
+        'tile index: ' + unpackPixel(0, m, indexData, width, height),
+        'zoom correction: ' + unpackPixel(0, m, zoomData, width, height)
+    )
+    console.log(
+        'top right corner',
+        'tile index: ' + unpackPixel(m, m, indexData, width, height),
+        'zoom correction: ' + unpackPixel(m, m, zoomData, width, height)
+    )
+    console.log(
+        'bottom left corner',
+        'tile index: ' + unpackPixel(0, 0, indexData, width, height),
+        'zoom correction: ' + unpackPixel(0, 0, zoomData, width, height)
+    )
+    console.log(
+        'bottom right corner',
+        'tile index: ' + unpackPixel(m, 0, indexData, width, height),
+        'zoom correction: ' + unpackPixel(m, 0, zoomData, width, height)
+    )
+    console.log(
+        'center',
+        'tile index: ' + unpackPixel(0.5, 0.5, indexData, width, height),
+        'zoom correction: ' + unpackPixel(0.5, 0.5, zoomData, width, height)
+    )
 }
 
 async function splitAllTiles(tileTree, scene, error, globeReference, material) {
@@ -360,6 +343,43 @@ async function splitNode(node, scene, martiniError, globeReference, material) {
             scene.add(results[i])
         }
     })
+}
+
+async function combineAllTiles(
+    tileTree,
+    scene,
+    martiniError,
+    globeReference,
+    material
+) {
+    let parents = []
+    tileTree.getLeafNodes().map((node) => {
+        if (!parents.includes(node.parent)) {
+            parents.push(node.parent)
+        }
+    })
+    const promises = parents.map(async (parent) => {
+        await parent.getThreeMesh(
+            martiniError,
+            globeReference.getMatrix(),
+            material
+        )
+        return parent
+    })
+    Promise.all(promises)
+        .then((parents) => {
+            for (let i in parents) {
+                let children = parents[i].getChildren()
+                for (let j in children) {
+                    scene.remove(children[j].threeMesh)
+                    //tileTree.removeNode(children[j])
+                }
+                scene.add(parents[i].threeMesh)
+            }
+        })
+        .then(() => {
+            window.tilesNeedUpdate = true
+        })
 }
 
 const updateMeshes = debounced(
