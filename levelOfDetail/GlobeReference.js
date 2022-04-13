@@ -79,4 +79,8 @@ export class GlobeReference {
     getMatrix() {
         return this.object3D.matrix.clone()
     }
+
+    getScale() {
+        return this.scalingFactor
+    }
 }
