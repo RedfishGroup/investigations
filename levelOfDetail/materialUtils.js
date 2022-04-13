@@ -280,6 +280,7 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
             precision highp float;
 
             varying vec4 vScreenCoords;
+            varying mat4 vProjectionMatrix;
 
             void main() {
                 vec4 screenCoords = projectionMatrix * modelViewMatrix * vec4(position, 1.);
@@ -294,11 +295,15 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
             `
             precision highp float;
 
+            uniform float scale;
+            uniform float cameraHeight;
             uniform sampler2D depthTexture;
             uniform sampler2D zoomTexture;
 
             varying vec4 vScreenCoords;
+            varying mat4 vProjectionMatrix;
 
+            // depth packing and unpacking functions
             const float PackUpscale = 256. / 255.; // fraction -> 0..1 (including 1)
             const float UnpackDownscale = 255. / 256.; // 0..1 -> fraction (excluding 1)
         
@@ -315,6 +320,38 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
         
             float unpackRGBAToNumber(const in vec4 v) {
                 return dot(v, UnpackFactors);
+            }
+
+            // error calculation functions
+            // error in meters per pixel at the equator
+            const float zoomError[21] = float[21](
+                156412., 78206., 39103., 19551.,
+                9776., 4888., 2444., 1222., 610.984,
+                305.492, 152.746, 76.373, 38.187,
+                19.093, 9.547, 4.773, 2.387, 1.193,
+                0.596, 0.298, 0.149
+            );
+
+            float getPixelError(const in float d) {
+                float vfov = 2. * atan(1. / vProjectionMatrix[2][2]);
+                float theta = vfov / cameraHeight;
+                float epsilon = 2. * d * atan(theta / 2.);
+                return epsilon * scale;
+            }
+
+            float zoomCorrection(const in float error, const in int zoom) {
+                float z_err = zoomError[zoom];
+
+                float correction;
+                if(error > z_err) {
+                    //
+                } else if(error < z_err) {
+                    //
+                } else {
+                    //
+                }
+
+                return correction;
             }
 
             void main() {
