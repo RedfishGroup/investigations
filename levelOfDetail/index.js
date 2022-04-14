@@ -137,7 +137,7 @@ async function main() {
         // Latitude: 27.9881,
         // Longitude: 86.925,
     }
-    const zoom = 10
+    const zoom = 7
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
     const bounds = getTileBounds(x, y, z)
@@ -234,9 +234,7 @@ async function main() {
 
     window.tilesNeedUpdate = true
     // animation function
-    const animate = function () {
-        requestAnimationFrame(animate)
-
+    const animate = async function () {
         // update orbit controls
         controls.update()
 
@@ -261,20 +259,40 @@ async function main() {
             scene.overrideMaterial = tileNeedsUpdateMaterial
             let zoomData = renderToUint8Array(tileRenderer, scene, tileCam)
 
+            // reset override material
+            scene.overrideMaterial = null
+
+            // set flag to false
+            window.tilesNeedUpdate = false
             // test
-            readTileData(
+            const tileZooms = await readTileData(
                 tileTree,
                 indexData,
                 zoomData,
                 tileCam.width,
                 tileCam.height
             )
-
-            // reset override material
-            scene.overrideMaterial = null
-
-            // set flag to false
-            window.tilesNeedUpdate = false
+            // split
+            const tooLow = tileZooms.filter((t) => t.tooLow)
+            for (let t of tooLow) {
+                if (!t.tile.isBusy()) {
+                    console.log('splitting', t.tile.toString())
+                    splitNode(
+                        t.tile,
+                        scene,
+                        martiniParams.error,
+                        globeReference,
+                        elevationMaterial
+                    ).then(() => {
+                        console.log('done splitting')
+                        window.tilesNeedUpdate = true
+                    })
+                }
+            }
+            const tooHigh = tileZooms.filter((t) => t.tooHigh)
+            for (let t of tooHigh) {
+                console.log('too high', t.tile.toString())
+            }
         }
 
         scene.overrideMaterial = tileIndexColorMaterial
@@ -287,6 +305,7 @@ async function main() {
 
         // regular render
         renderer.render(scene, camera)
+        requestAnimationFrame(animate)
     }
 
     // start animating
@@ -323,10 +342,17 @@ async function readTileData(tileTree, indexData, zoomData, width, height) {
 
     console.log('tiles and zoom', tiles)
 
+    const tileResults = []
     for (let i in tiles) {
         let tile = tileTree.getNodeByID(i)
+
         let maxZ = tiles[i].sort()[tiles[i].length - 1]
-        if (tile.z > maxZ) {
+        if (!tile) {
+            console.log('tile not found', i)
+        } else if (!tile.isLeaf()) {
+            console.log('not a leaf', tile.toString())
+        } else if (tile.z > maxZ) {
+            tileResults.push({ tile, tooHigh: true, maxZ })
             console.log(
                 'tile: ' +
                     i +
@@ -336,6 +362,7 @@ async function readTileData(tileTree, indexData, zoomData, width, height) {
                     maxZ
             )
         } else if (tile.z < maxZ) {
+            tileResults.push({ tile, tooLow: true, maxZ })
             console.log(
                 'tile: ' +
                     i +
@@ -345,11 +372,13 @@ async function readTileData(tileTree, indexData, zoomData, width, height) {
                     maxZ
             )
         } else {
+            tileResults.push({ tile, justRight: true })
             console.log(
                 'tile: ' + i + ', zoom: ' + tile.z + ', good resolution'
             )
         }
     }
+    return tileResults
 }
 
 async function splitAllTiles(tileTree, scene, error, globeReference, material) {
