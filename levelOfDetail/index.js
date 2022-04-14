@@ -289,9 +289,14 @@ async function main() {
                     })
                 }
             }
+            // prune
             const tooHigh = tileZooms.filter((t) => t.tooHigh)
             for (let t of tooHigh) {
-                console.log('too high', t.tile.toString())
+                const siblings = t.tile.getSiblings()
+                const allSiblingsCanBeCombined = siblings.every((s) => {
+                    return tooHigh.find((s2)=>{s2.tile === s}) >= 0
+                })
+                console.log('too high', t.tile.id, allSiblingsCanBeCombined)
             }
         }
 
