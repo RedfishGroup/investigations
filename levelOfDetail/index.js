@@ -293,10 +293,10 @@ async function main() {
             const tooHigh = tileZooms.filter((t) => t.tooHigh)
             for (let t of tooHigh) {
                 const siblings = t.tile.getSiblings()
-                const allSiblingsCanBeCombined = siblings.every((s) => {
+                const canBePruned = siblings.every((s) => {
                     return tooHigh.find((s2)=>{s2.tile === s}) >= 0
                 })
-                console.log('too high', t.tile.id, allSiblingsCanBeCombined)
+                console.log('too high', t.tile.id, canBePruned)
             }
         }
 
