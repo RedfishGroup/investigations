@@ -222,6 +222,9 @@ export class XYZTileNode {
      * @returns {[XYZTileNode, XYZTileNode, ...]}
      */
     split() {
+        if (this.children.length < 4) {
+            this._createChildren()
+        }
         return this.getChildren()
     }
 
@@ -259,9 +262,6 @@ export class XYZTileNode {
      * @returns {[XYZTileNode, XYZTileNode, ...]}
      */
     getChildren() {
-        if (this.children.length < 4) {
-            this._createChildren()
-        }
         return this.children
     }
 
