@@ -219,7 +219,7 @@ export class XYZTileNode {
 
     /**
      * Get all the children of this node, and create them if they don't exist.
-     * @returns {[XYZTileNode, XYZTileNode, ...]}
+     * @returns {[XYZTileNode, XYZTileNode, XYZTileNode, XYZTileNode]}
      */
     split() {
         if (this.children.length < 4) {
@@ -251,9 +251,17 @@ export class XYZTileNode {
                     this.removeNode(child)
                 })
             }
-            node.children = undefined
+            node.children = []
         } else {
             throw ('node not found', node)
+        }
+    }
+
+    getSiblings() {
+        if (this.parent) {
+            return this.parent.children
+        } else {
+            return []
         }
     }
 
