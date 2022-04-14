@@ -243,6 +243,9 @@ export class XYZTileNode {
      */
     removeNode(node = this) {
         if (node) {
+            if(this.isBusy){
+                console.error('Removing a node that is busy doing asynchronous stuff. This is probably a bug.')
+            }
             if (node.parent) {
                 node.parent.children = node.parent.children.filter((child) => {
                     return child !== node
