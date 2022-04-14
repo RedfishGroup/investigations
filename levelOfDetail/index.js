@@ -288,7 +288,36 @@ async function main() {
 }
 
 async function readTileData(indexData, zoomData, width, height) {
-    let m = 0.9999
+    let tiles = {}
+    for (let i = 0; i < width; i++) {
+        for (let j = 0; j < height; j++) {
+            let index = unpackPixel(
+                i / width,
+                j / height,
+                indexData,
+                width,
+                height
+            )
+            let zoom = unpackPixel(
+                i / width,
+                j / height,
+                zoomData,
+                width,
+                height
+            )
+            if (tiles[index] !== undefined) {
+                if (zoom > tiles[index]) {
+                    tiles[index] = zoom
+                }
+            } else {
+                tiles[index] = zoom
+            }
+        }
+    }
+
+    console.log('tiles and zoom', tiles)
+
+    /*let m = 0.9999
     console.log(
         'top left corner',
         'tile index: ' + unpackPixel(0, m, indexData, width, height),
@@ -313,7 +342,7 @@ async function readTileData(indexData, zoomData, width, height) {
         'center',
         'tile index: ' + unpackPixel(0.5, 0.5, indexData, width, height),
         'zoom correction: ' + unpackPixel(0.5, 0.5, zoomData, width, height)
-    )
+    )*/
 }
 
 async function splitAllTiles(tileTree, scene, error, globeReference, material) {

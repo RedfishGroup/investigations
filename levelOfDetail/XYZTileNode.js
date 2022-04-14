@@ -44,7 +44,7 @@ export class XYZTileNode {
         this.threeMesh = null
         this._lastMArtiniError = null
         this.id = XYZTileNode.#nodeCount
-        XYZTileNode.#nodeCount = XYZTileNode.#nodeCount + 1 // note this will break after 2**32 (4 billion) nodes. TODO figure out.
+        XYZTileNode.#nodeCount = XYZTileNode.#nodeCount + 1
         XYZTileNode.#nodeIDLookup[this.id] = this
     }
 
