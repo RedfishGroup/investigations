@@ -73,19 +73,18 @@ export class XYZTileNode {
         if (this.z >= this.MAX_ZOOM) {
             return this.children
         }
-        // create the four child nodes
-        const children = splitTileCoordinates(this.x, this.y, this.z).map(
-            (c) => {
-                const childExists = this.children.find((child) => {
-                    child.x === c.x && child.y === c.y && child.z === c.z
-                })
-                if (childExists) {
-                    return childExists
-                } else {
-                    return new XYZTileNode(c.x, c.y, c.z, this)
-                }
+        const childCoords = splitTileCoordinates(this.x, this.y, this.z)
+        // create the children
+        const children = childCoords.map((c) => {
+            const childExists = this.children.find((child) => {
+                child.x === c.x && child.y === c.y && child.z === c.z
+            })
+            if (childExists) {
+                return childExists
+            } else {
+                return new XYZTileNode(c.x, c.y, c.z, this)
             }
-        )
+        })
         this.children = children
         return children
     }
@@ -260,7 +259,7 @@ export class XYZTileNode {
      * @returns {[XYZTileNode, XYZTileNode, ...]}
      */
     getChildren() {
-        if (this.children.length === 0) {
+        if (this.children.length < 4) {
             this._createChildren()
         }
         return this.children
