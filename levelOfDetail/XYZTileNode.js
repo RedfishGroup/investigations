@@ -43,6 +43,7 @@ export class XYZTileNode {
         this.elevation = null
         this.threeMesh = null
         this._lastMArtiniError = null
+        this._isBusy = false
         this.id = XYZTileNode.#nodeCount
         XYZTileNode.#nodeCount = XYZTileNode.#nodeCount + 1
         XYZTileNode.#nodeIDLookup[this.id] = this
@@ -95,6 +96,7 @@ export class XYZTileNode {
      */
     async getElevation() {
         if (!this.elevation) {
+            this._isBusy = true
             const elevation = await getAndDecodeTerrariumElevationTile(
                 this.x,
                 this.y,
@@ -107,6 +109,7 @@ export class XYZTileNode {
             } else {
                 this.elevation = await elevation.resample(257, 257)
             }
+            this._isBusy = false
         }
         return this.elevation
     }
@@ -137,10 +140,12 @@ export class XYZTileNode {
      * @returns
      */
     async getMartiniMesh(martiniError) {
+        this._isBusy = true
         const rtin = new mapboxMartini(257)
         const elev = await this.getElevation()
         const tile = rtin.createTile(elev.data)
         const mesh = tile.getMesh(martiniError || 0.1)
+        this._isBusy = false
         return mesh
     }
 
@@ -154,6 +159,7 @@ export class XYZTileNode {
      */
     async getThreeMesh(martiniError, homeMatrix, material) {
         if (this.needsUpdate(martiniError)) {
+            this._isBusy = true
             if (this.threeMesh) {
                 updateGeometry(
                     this.threeMesh.geometry,
@@ -173,6 +179,7 @@ export class XYZTileNode {
                 )
                 this.threeMesh = new THREE.Mesh(geometry, material)
             }
+            this._isBusy = false
         }
         return this.threeMesh
     }
@@ -282,6 +289,10 @@ export class XYZTileNode {
             return true
         }
         return false
+    }
+
+    isBusy(){
+        return this._isBusy
     }
 
     toString() {
