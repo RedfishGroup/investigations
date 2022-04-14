@@ -15,7 +15,6 @@ import {
     renderToUint8Array,
     DepthShaderMaterial,
     TilePickingMaterial,
-    ZoomPickingMaterial,
     ElevationShaderMaterial,
     TileNeedsUpdateMaterial,
     TileIndexColorMaterial,
@@ -57,7 +56,7 @@ async function main() {
     // orbit controls setup
     const controls = new OrbitControls(camera, renderer.domElement)
     controls.enablePan = false
-    controls.maxDistance = 10
+    controls.maxDistance = 15
     controls.maxPolarAngle = Math.PI / 2
 
     // resize function for window
@@ -89,23 +88,33 @@ async function main() {
     // tiling camera setup
     const tileCam = new CalibratedCamera({ width, height })
     //tileCam.position.set(-0.5, -0.5, 0.285)
-    tileCam.position.set(1.8, 1.8, 1)
+    tileCam.position.set(5, -5, 0.5)
     tileCam.up.set(0, 0, 1)
     tileCam.updateMatrix()
     tileCam.updateProjectionMatrix()
     //tileCam.lookAt(-0.5, 0.5, 0.3)
-    tileCam.lookAt(0.1, 0.1, 0)
+    tileCam.lookAt(0, 0, 0.3)
 
     // create scene
     const scene = new THREE.Scene()
 
+    // group for putting everything but terrain tiles in
+    const group = new THREE.Group()
+    scene.add(group)
+
+    // group for putting all bounding boxes in
+    const bboxGroup = new THREE.Group()
+    scene.add(bboxGroup)
+
+    window.bboxGroup = bboxGroup
+
     // put in axes
     const axes = new THREE.AxesHelper(2)
-    scene.add(axes)
+    group.add(axes)
 
     // put in x-y plane
     const xyPlane = getXYPlane()
-    scene.add(xyPlane)
+    group.add(xyPlane)
 
     // camera viewing frustum
     const frustum = new Frustum({ far: 0.2, camera: tileCam })
@@ -120,7 +129,7 @@ async function main() {
         tileCam.rotation.z
     )
 
-    scene.add(frustum)
+    group.add(frustum)
 
     frustum.updateGeometry()
 
@@ -130,12 +139,12 @@ async function main() {
         //Longitude: -106.42811011436379,
 
         // Shiprock
-        Latitude: 36.69165,
-        Longitude: -108.83866,
+        //Latitude: 36.69165,
+        //Longitude: -108.83866,
 
         // Everest
-        // Latitude: 27.9881,
-        // Longitude: 86.925,
+        Latitude: 27.9881,
+        Longitude: 86.925,
     }
     const zoom = 7
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
@@ -158,7 +167,6 @@ async function main() {
     }
 
     const elevationMaterial = new ElevationShaderMaterial(materialParams)
-    const zoomMaterial = new ZoomPickingMaterial(materialParams)
     const depthMaterial = new DepthShaderMaterial(materialParams)
     const tileIndexMaterial = new TilePickingMaterial(materialParams)
     const tileIndexColorMaterial = new TileIndexColorMaterial(materialParams)
@@ -184,11 +192,12 @@ async function main() {
     const gui = new GUI()
     const materialGUI = gui.addFolder('Material')
     materialGUI.open()
-    materialGUI.add(materialParams, 'wireframe').onChange((bool) => {
-        elevationMaterial.wireframe = bool
-    })
     materialGUI.addColor(materialParams, 'color').onChange((color) => {
         elevationMaterial.setColor(color)
+    })
+    materialGUI.add(bboxGroup, 'visible').name('bounding boxes')
+    materialGUI.add(materialParams, 'wireframe').onChange((bool) => {
+        elevationMaterial.wireframe = bool
     })
     const martiniGUI = gui.addFolder('Martini')
     martiniGUI.open()
@@ -204,6 +213,7 @@ async function main() {
                     await splitAllTiles(
                         tileTree,
                         scene,
+                        bboxGroup,
                         martiniParams.error,
                         globeReference,
                         elevationMaterial
@@ -221,6 +231,7 @@ async function main() {
                     await combineAllTiles(
                         tileTree,
                         scene,
+                        bboxGroup,
                         martiniParams.error,
                         globeReference,
                         elevationMaterial
@@ -238,9 +249,12 @@ async function main() {
         // update orbit controls
         controls.update()
 
-        axes.visible = false
-        frustum.visible = false
-        xyPlane.visible = false
+        group.visible = false
+        let reset = false
+        if (bboxGroup.visible) {
+            bboxGroup.visible = false
+            reset = true
+        }
 
         if (window.tilesNeedUpdate) {
             // render to depth
@@ -276,15 +290,16 @@ async function main() {
             const tooLow = tileZooms.filter((t) => t.tooLow)
             for (let t of tooLow) {
                 if (!t.tile.isBusy()) {
-                    console.log('splitting', t.tile.toString())
+                    //console.log('splitting', t.tile.toString())
                     splitNode(
                         t.tile,
                         scene,
+                        bboxGroup,
                         martiniParams.error,
                         globeReference,
                         elevationMaterial
                     ).then(() => {
-                        console.log('done splitting')
+                        //console.log('done splitting')
                         window.tilesNeedUpdate = true
                     })
                 }
@@ -294,19 +309,22 @@ async function main() {
             for (let t of tooHigh) {
                 const siblings = t.tile.getSiblings()
                 const canBePruned = siblings.every((s) => {
-                    return tooHigh.find((s2)=>{s2.tile === s}) >= 0
+                    return (
+                        tooHigh.find((s2) => {
+                            s2.tile === s
+                        }) >= 0
+                    )
                 })
-                console.log('too high', t.tile.id, canBePruned)
+                //console.log('too high', t.tile.id, canBePruned)
             }
         }
 
-        scene.overrideMaterial = tileIndexColorMaterial
         tileRenderer.render(scene, tileCam)
-        scene.overrideMaterial = null
 
-        axes.visible = true
-        frustum.visible = true
-        xyPlane.visible = true
+        group.visible = true
+        if (reset) {
+            bboxGroup.visible = true
+        }
 
         // regular render
         renderer.render(scene, camera)
@@ -335,17 +353,18 @@ async function readTileData(tileTree, indexData, zoomData, width, height) {
                 width,
                 height
             )
-            if (tiles[index] !== undefined) {
-                if (!tiles[index].includes(zoom)) {
-                    tiles[index].push(zoom)
+
+            if (zoom !== 256 * 255 && index !== 255 * 256) {
+                if (tiles[index] !== undefined) {
+                    if (!tiles[index].includes(zoom)) {
+                        tiles[index].push(zoom)
+                    }
+                } else {
+                    tiles[index] = [zoom]
                 }
-            } else {
-                tiles[index] = [zoom]
             }
         }
     }
-
-    console.log('tiles and zoom', tiles)
 
     const tileResults = []
     for (let i in tiles) {
@@ -355,61 +374,73 @@ async function readTileData(tileTree, indexData, zoomData, width, height) {
         if (!tile) {
             console.log('tile not found', i)
         } else if (!tile.isLeaf()) {
-            console.log('not a leaf', tile.toString())
+            //console.log('not a leaf', tile.toString())
         } else if (tile.z > maxZ) {
             tileResults.push({ tile, tooHigh: true, maxZ })
-            console.log(
+            /*console.log(
                 'tile: ' +
                     i +
                     ', zoom: ' +
                     tile.z +
                     ', go down in resolution to ' +
                     maxZ
-            )
+            )*/
         } else if (tile.z < maxZ) {
             tileResults.push({ tile, tooLow: true, maxZ })
-            console.log(
+            /*console.log(
                 'tile: ' +
                     i +
                     ', zoom: ' +
                     tile.z +
                     ', go up in resolution ' +
                     maxZ
-            )
+            )*/
         } else {
             tileResults.push({ tile, justRight: true })
-            console.log(
+            /*console.log(
                 'tile: ' + i + ', zoom: ' + tile.z + ', good resolution'
-            )
+            )*/
         }
     }
     return tileResults
 }
 
-async function splitAllTiles(tileTree, scene, error, globeReference, material) {
+async function splitAllTiles(
+    tileTree,
+    scene,
+    group,
+    error,
+    globeReference,
+    material
+) {
     return Promise.all(
         tileTree.getLeafNodes().map((node) => {
-            return splitNode(node, scene, error, globeReference, material)
+            return splitNode(
+                node,
+                scene,
+                group,
+                error,
+                globeReference,
+                material
+            )
         })
     ).then(() => {
         window.tilesNeedUpdate = true
     })
 }
 
-async function splitNode(node, scene, error, globeReference, material) {
+async function splitNode(node, scene, group, error, globeReference, material) {
     node.split()
     const promises = node.getChildren().map(async (child) => {
-        let mesh = await child.getThreeMesh(
-            error,
-            globeReference.getMatrix(),
-            material
-        )
-        return mesh
+        await child.getThreeMesh(error, globeReference.getMatrix(), material)
+        return child
     })
     return Promise.all(promises).then((results) => {
         scene.remove(node.threeMesh)
+        group.remove(node.bbox)
         for (let i in results) {
-            scene.add(results[i])
+            scene.add(results[i].threeMesh)
+            group.add(results[i].bbox)
         }
     })
 }
@@ -417,6 +448,7 @@ async function splitNode(node, scene, error, globeReference, material) {
 async function combineAllTiles(
     tileTree,
     scene,
+    group,
     error,
     globeReference,
     material
@@ -437,9 +469,11 @@ async function combineAllTiles(
                 let children = parents[i].getChildren()
                 for (let j in children) {
                     scene.remove(children[j].threeMesh)
+                    group.remove(children[j].bbox)
                     tileTree.removeNode(children[j])
                 }
                 scene.add(parents[i].threeMesh)
+                group.add(parents[i].bbox)
             }
         })
         .then(() => {

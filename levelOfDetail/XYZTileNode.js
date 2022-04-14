@@ -168,6 +168,7 @@ export class XYZTileNode {
                     this.getBounds(),
                     homeMatrix
                 )
+                this.bbox.update()
             } else {
                 const bounds = this.getBounds()
                 const marty = await this.getMartiniMesh(martiniError)
@@ -177,7 +178,23 @@ export class XYZTileNode {
                     bounds,
                     homeMatrix
                 )
+                geometry.computeBoundingBox()
                 this.threeMesh = new THREE.Mesh(geometry, material)
+                this.bbox = new THREE.Box3Helper(
+                    new THREE.Box3(
+                        new THREE.Vector3(
+                            geometry.boundingBox.min.x,
+                            geometry.boundingBox.min.y,
+                            0
+                        ),
+                        new THREE.Vector3(
+                            geometry.boundingBox.max.x,
+                            geometry.boundingBox.max.y,
+                            1
+                        )
+                    ),
+                    0xffffff
+                )
             }
             this._isBusy = false
         }
@@ -243,8 +260,10 @@ export class XYZTileNode {
      */
     removeNode(node = this) {
         if (node) {
-            if(this.isBusy){
-                console.error('Removing a node that is busy doing asynchronous stuff. This is probably a bug.')
+            if (this.isBusy) {
+                console.error(
+                    'Removing a node that is busy doing asynchronous stuff. This is probably a bug.'
+                )
             }
             if (node.parent) {
                 node.parent.children = node.parent.children.filter((child) => {
@@ -254,6 +273,9 @@ export class XYZTileNode {
             delete XYZTileNode.#nodeIDLookup[node.id]
             node.threeMesh.geometry.dispose()
             node.threeMesh = undefined // for garbage collection
+            node.bbox.geometry.dispose()
+            this.bbox = undefined
+
             node.elevation = undefined
             node.parent = undefined
             if (node.children) {
@@ -294,7 +316,7 @@ export class XYZTileNode {
         return false
     }
 
-    isBusy(){
+    isBusy() {
         return this._isBusy
     }
 
