@@ -10,8 +10,6 @@ import { CalibratedCamera } from './CalibratedCamera.js'
 
 import { debounced } from './debounced.js'
 
-import { updateGeometry } from './geometryUtils.js'
-
 import {
     unpackPixel,
     renderToUint8Array,
@@ -195,7 +193,7 @@ async function main() {
     const martiniGUI = gui.addFolder('Martini')
     martiniGUI.open()
     martiniGUI.add(martiniParams, 'error', 0, 20, 0.5).onChange((error) => {
-        updateMeshes(error, tileTree, globeReference)
+        updateMeshes(error, tileTree, globeReference, elevationMaterial)
     })
     const lodGUI = gui.addFolder('Level of Detail')
     lodGUI.open()
@@ -372,7 +370,7 @@ async function combineAllTiles(
                 let children = parents[i].getChildren()
                 for (let j in children) {
                     scene.remove(children[j].threeMesh)
-                    children[j].removeNode()
+                    tileTree.removeNode(children[j])
                 }
                 scene.add(parents[i].threeMesh)
             }
@@ -383,15 +381,9 @@ async function combineAllTiles(
 }
 
 const updateMeshes = debounced(
-    async (error, tileTree, globeReference) => {
+    async (error, tileTree, globeReference, material) => {
         for (let tm of tileTree.getLeafNodes()) {
-            updateGeometry(
-                tm.threeMesh.geometry,
-                await tm.getMartiniMesh(error),
-                tm.elevation,
-                tm.getBounds(),
-                globeReference.getMatrix()
-            )
+            tm.getThreeMesh(error, globeReference.getMatrix(), material)
         }
     },
     200,

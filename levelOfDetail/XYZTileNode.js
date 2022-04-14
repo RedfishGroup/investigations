@@ -5,7 +5,7 @@ import {
 } from './utils.js'
 import mapboxMartini from 'https://cdn.skypack.dev/@mapbox/martini'
 import { getAndDecodeTerrariumElevationTile } from './mapzenTiles.js'
-import { geometryFromMartiniMesh } from './geometryUtils.js'
+import { updateGeometry, geometryFromMartiniMesh } from './geometryUtils.js'
 import * as THREE from 'three'
 
 /**
@@ -119,9 +119,6 @@ export class XYZTileNode {
      */
     getBounds() {
         const bounds = getTileBounds(this.x, this.y, this.z)
-        bounds.x = this.x
-        bounds.y = this.y
-        bounds.z = this.z
         bounds.index = this.id
         if (this.PAD_SIDES_TO_REMOVE_SEAMS) {
             // stretch the bounds to the edge of the tile. This is to minimize gaps in the mesh.
@@ -158,16 +155,25 @@ export class XYZTileNode {
      */
     async getThreeMesh(martiniError, homeMatrix, material) {
         if (this.needsUpdate(martiniError)) {
-            const bounds = this.getBounds()
-            const marty = await this.getMartiniMesh(martiniError, homeMatrix)
-            let geometry = geometryFromMartiniMesh(
-                marty,
-                this.elevation,
-                bounds,
-                homeMatrix
-            )
-            const mesh = new THREE.Mesh(geometry, material)
-            this.threeMesh = mesh
+            if (this.threeMesh) {
+                updateGeometry(
+                    this.threeMesh.geometry,
+                    await this.getMartiniMesh(martiniError),
+                    this.elevation,
+                    this.getBounds(),
+                    homeMatrix
+                )
+            } else {
+                const bounds = this.getBounds()
+                const marty = await this.getMartiniMesh(martiniError)
+                let geometry = geometryFromMartiniMesh(
+                    marty,
+                    this.elevation,
+                    bounds,
+                    homeMatrix
+                )
+                this.threeMesh = new THREE.Mesh(geometry, material)
+            }
         }
         return this.threeMesh
     }
@@ -222,9 +228,9 @@ export class XYZTileNode {
 
     /**
      * Remove a node from the tree.
-     * 
-     * @param {XYZTileNode} node 
-     * @returns 
+     *
+     * @param {XYZTileNode} node
+     * @returns
      */
     removeNode(node = this) {
         if (node) {
@@ -234,6 +240,7 @@ export class XYZTileNode {
                 })
             }
             delete XYZTileNode.#nodeIDLookup[node.id]
+            node.threeMesh.geometry.dispose()
             node.threeMesh = undefined // for garbage collection
             node.elevation = undefined
             node.parent = undefined
@@ -243,8 +250,8 @@ export class XYZTileNode {
                 })
             }
             node.children = undefined
-        } else{
-            throw('node not found', node)
+        } else {
+            throw ('node not found', node)
         }
     }
 
