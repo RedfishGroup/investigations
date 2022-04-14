@@ -380,24 +380,41 @@ async function combineAllTiles(
     globeReference,
     material
 ) {
-    return Promise.all(
-        tileTree.getLeafNodes().map((node) => {
-            return combineNode(node, scene, error, globeReference, material)
-        })
-    ).then(() => {
-        window.tilesNeedUpdate = true
+    let parents = []
+    tileTree.getLeafNodes().map((node) => {
+        if (!parents.includes(node.parent)) {
+            parents.push(node.parent)
+        }
     })
+    const promises = parents.map(async (parent) => {
+        await parent.getThreeMesh(error, globeReference.getMatrix(), material)
+        return parent
+    })
+    Promise.all(promises)
+        .then((parents) => {
+            for (let i in parents) {
+                let children = parents[i].getChildren()
+                for (let j in children) {
+                    scene.remove(children[j].threeMesh)
+                    tileTree.removeNode(children[j])
+                }
+                scene.add(parents[i].threeMesh)
+            }
+        })
+        .then(() => {
+            window.tilesNeedUpdate = true
+        })
 }
 
-async function combineNode(node, scene, error, globeReference, material) {
-    await node.getThreeMesh(error, globeReference.getMatrix(), material)
-    let children = node.getChildren()
-    for (let i in children) {
-        scene.remove(children[i].threeMesh)
-        children[i].removeNode()
-    }
-    scene.add(node.threeMesh)
-    //window.tilesNeedUpdate = true
+async function combineTile(
+    id,
+    tileTree,
+    scene,
+    error,
+    globeReference,
+    material
+) {
+    //
 }
 
 const updateMeshes = debounced(
