@@ -262,7 +262,13 @@ async function main() {
             let zoomData = renderToUint8Array(tileRenderer, scene, tileCam)
 
             // test
-            readTileData(indexData, zoomData, tileCam.width, tileCam.height)
+            readTileData(
+                tileTree,
+                indexData,
+                zoomData,
+                tileCam.width,
+                tileCam.height
+            )
 
             // reset override material
             scene.overrideMaterial = null
@@ -287,7 +293,7 @@ async function main() {
     animate()
 }
 
-async function readTileData(indexData, zoomData, width, height) {
+async function readTileData(tileTree, indexData, zoomData, width, height) {
     let tiles = {}
     for (let j = 0; j < height; j++) {
         for (let i = 0; i < width; i++) {
@@ -317,32 +323,33 @@ async function readTileData(indexData, zoomData, width, height) {
 
     console.log('tiles and zoom', tiles)
 
-    /*let m = 0.9999
-    console.log(
-        'top left corner',
-        'tile index: ' + unpackPixel(0, m, indexData, width, height),
-        'zoom correction: ' + unpackPixel(0, m, zoomData, width, height)
-    )
-    console.log(
-        'top right corner',
-        'tile index: ' + unpackPixel(m, m, indexData, width, height),
-        'zoom correction: ' + unpackPixel(m, m, zoomData, width, height)
-    )
-    console.log(
-        'bottom left corner',
-        'tile index: ' + unpackPixel(0, 0, indexData, width, height),
-        'zoom correction: ' + unpackPixel(0, 0, zoomData, width, height)
-    )
-    console.log(
-        'bottom right corner',
-        'tile index: ' + unpackPixel(m, 0, indexData, width, height),
-        'zoom correction: ' + unpackPixel(m, 0, zoomData, width, height)
-    )
-    console.log(
-        'center',
-        'tile index: ' + unpackPixel(0.5, 0.5, indexData, width, height),
-        'zoom correction: ' + unpackPixel(0.5, 0.5, zoomData, width, height)
-    )*/
+    for (let i in tiles) {
+        let tile = tileTree.getNodeByID(i)
+        let maxZ = tiles[i].sort()[tiles[i].length - 1]
+        if (tile.z > maxZ) {
+            console.log(
+                'tile: ' +
+                    i +
+                    ', zoom: ' +
+                    tile.z +
+                    ', go down in resolution to ' +
+                    maxZ
+            )
+        } else if (tile.z < maxZ) {
+            console.log(
+                'tile: ' +
+                    i +
+                    ', zoom: ' +
+                    tile.z +
+                    ', go up in resolution ' +
+                    maxZ
+            )
+        } else {
+            console.log(
+                'tile: ' + i + ', zoom: ' + tile.z + ', good resolution'
+            )
+        }
+    }
 }
 
 async function splitAllTiles(tileTree, scene, error, globeReference, material) {
@@ -406,7 +413,7 @@ async function combineAllTiles(
         })
 }
 
-async function combineTile(
+async function combineNode(
     id,
     tileTree,
     scene,
@@ -414,7 +421,18 @@ async function combineTile(
     globeReference,
     material
 ) {
-    //
+    let node = tileTree.getNodeByID(id)
+
+    let parent = node.getParent()
+    await parent.getThreeMesh(error, globeReference.getMatrix(), material)
+
+    let siblings = node.getSiblings()
+    for (let i in siblings) {
+        scene.remove(siblings[i].threeMesh)
+        tileTree.removeNode(siblings[i])
+    }
+
+    scene.add(parent.threeMesh)
 }
 
 const updateMeshes = debounced(
