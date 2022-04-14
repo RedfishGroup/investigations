@@ -280,9 +280,9 @@ export class XYZTileNode {
     toString() {
         const allNodes = this.getAllNodesBelow()
         const nodeStrings = allNodes.map((node) => {
-            return `[x:${node.x},y:${node.y},z:${node.z}, id:${node.id}]`
+            return ` [x:${node.x},y:${node.y},z:${node.z}, id:${node.id}]`
         })
-        return nodeStrings.join(', ')
+        return `total node count: ${allNodes.length} ${nodeStrings.join(', ')}`
     }
 }
 
