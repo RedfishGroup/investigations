@@ -291,15 +291,17 @@ async function main() {
         }
 
         // regular render
+        scene.overrideMaterial = tileIndexColorMaterial
         renderer.render(scene, camera)
+        scene.overrideMaterial = null
         requestAnimationFrame(animate)
     }
 
     window.busySplitting = false
+    window.busyPruning = false
     const updateTiles = async function (indexData, zoomData) {
-        if (!window.busySplitting) {
-            window.busySplitting = true
-            const tileZooms = readTileData(
+        if (!window.busySplitting && !window.busyPruning) {
+            const tileData = readTileData(
                 tileTree,
                 indexData,
                 zoomData,
@@ -307,16 +309,28 @@ async function main() {
                 tileCam.height
             )
 
+            if (Object.keys(tileData.tooLow).length > 0) {
+                splitTiles(tileData)
+            } else {
+                pruneTiles(tileData)
+            }
+        }
+    }
+
+    const splitTiles = async function (tileData) {
+        if (!window.busySplitting && !window.busyPruning) {
+            window.busySplitting = true
+
             const promises = []
 
             // split
-            const tooLow = tileZooms.filter((t) => t.tooLow)
-            for (let t of tooLow) {
-                if (!t.tile.isBusy()) {
-                    //console.log('splitting', t.tile.toString())
+            const tooLow = tileData.tooLow
+            for (let t in tooLow) {
+                let result = tooLow[t]
+                if (!result.tile.isBusy()) {
                     promises.push(
                         splitNode(
-                            t.tile,
+                            result.tile,
                             scene,
                             bboxGroup,
                             martiniParams.error,
@@ -329,27 +343,54 @@ async function main() {
                 }
             }
 
+            Promise.all(promises).then(() => {
+                window.busySplitting = false
+            })
+        }
+    }
+
+    const pruneTiles = async function (tileData) {
+        if (!window.busyPruning && !window.busySplitting) {
+            window.busyPruning = true
+
+            const promises = []
+
             // prune
-            const tilesWithTooMuchDetail = tileZooms
-                .filter((t) => t.tooHigh)
-                .map((x) => x.tile)
-            for (let t of tilesWithTooMuchDetail) {
+            const tilesThatAreJustRight = tileData.justRight
+            const tilesWithTooMuchDetail = tileData.tooHigh
+            for (let t of tileTree.getLeafNodes()) {
                 // if all siblings have too much detail then they are prunable
                 const siblings = t.getSiblings()
                 const canBePruned = siblings.every((s) => {
-                    return tilesWithTooMuchDetail.includes(s)
+                    return (
+                        s.isLeaf() &&
+                        !tilesThatAreJustRight[s.id] &&
+                        (!tileData.ids.includes(t.id) ||
+                            tilesWithTooMuchDetail[s.id] !== undefined)
+                    )
                 })
                 // make sure no siblings are busy
                 const siblingsNotBusy = siblings.every((s) => !s.isBusy())
                 if (canBePruned && siblingsNotBusy) {
                     // remove siblings and add parent's mesh
-                    console.log('TODO Need to prune', t.toString())
-                    //promises.push(combineNode())
+                    promises.push(
+                        combineNode(
+                            t.id,
+                            tileTree,
+                            scene,
+                            bboxGroup,
+                            martiniParams.error,
+                            globeReference,
+                            elevationMaterial
+                        ).then(() => {
+                            window.tilesNeedUpdate = true
+                        })
+                    )
                 }
             }
 
             Promise.all(promises).then(() => {
-                window.busySplitting = false
+                window.busyPruning = false
             })
         }
     }
@@ -389,39 +430,23 @@ function readTileData(tileTree, indexData, zoomData, width, height) {
         }
     }
 
-    const tileResults = []
+    const tileResults = { ids: [], tooHigh: {}, tooLow: {}, justRight: {} }
     for (let i in tiles) {
         let tile = tileTree.getNodeByID(i)
 
         if (!tile) {
             console.log('tile not found', i)
         } else if (!tile.isLeaf()) {
-            //console.log('not a leaf', tile.toString())
+            console.log('not a leaf', tile.toString())
         } else if (tile.z > tiles[i]) {
-            tileResults.push({ tile, tooHigh: true, zoom: tiles[i] })
-            /*console.log(
-                'tile: ' +
-                    i +
-                    ', zoom: ' +
-                    tile.z +
-                    ', go down in resolution to ' +
-                    tiles[i]
-            )*/
+            tileResults.ids.push(Number(i))
+            tileResults.tooHigh[i] = { tile, zoom: tiles[i] }
         } else if (tile.z < tiles[i]) {
-            tileResults.push({ tile, tooLow: true, zoom: tiles[i] })
-            /*console.log(
-                'tile: ' +
-                    i +
-                    ', zoom: ' +
-                    tile.z +
-                    ', go up in resolution ' +
-                    tiles[i]
-            )*/
+            tileResults.ids.push(Number(i))
+            tileResults.tooLow[i] = { tile, zoom: tiles[i] }
         } else {
-            tileResults.push({ tile, justRight: true })
-            /*console.log(
-                'tile: ' + i + ', zoom: ' + tile.z + ', good resolution'
-            )*/
+            tileResults.ids.push(Number(i))
+            tileResults.justRight[i] = { tile }
         }
     }
     return tileResults
@@ -504,22 +529,26 @@ async function combineNode(
     id,
     tileTree,
     scene,
+    group,
     error,
     globeReference,
     material
 ) {
     let node = tileTree.getNodeByID(id)
+    if (node) {
+        let parent = node.parent
+        await parent.getThreeMesh(error, globeReference.getMatrix(), material)
 
-    let parent = node.getParent()
-    await parent.getThreeMesh(error, globeReference.getMatrix(), material)
+        let siblings = node.getSiblings()
+        for (let i in siblings) {
+            scene.remove(siblings[i].threeMesh)
+            group.remove(siblings[i].bbox)
+            tileTree.removeNode(siblings[i])
+        }
 
-    let siblings = node.getSiblings()
-    for (let i in siblings) {
-        scene.remove(siblings[i].threeMesh)
-        tileTree.removeNode(siblings[i])
+        scene.add(parent.threeMesh)
+        group.add(parent.bbox)
     }
-
-    scene.add(parent.threeMesh)
 }
 
 const updateMeshes = debounced(

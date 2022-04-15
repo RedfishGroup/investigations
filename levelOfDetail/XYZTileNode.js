@@ -260,7 +260,7 @@ export class XYZTileNode {
      */
     removeNode(node = this) {
         if (node) {
-            if (this.isBusy) {
+            if (this.isBusy()) {
                 console.error(
                     'Removing a node that is busy doing asynchronous stuff. This is probably a bug.'
                 )
@@ -328,8 +328,12 @@ export class XYZTileNode {
         return `total node count: ${allNodes.length} ${nodeStrings.join(', ')}`
     }
 
-    toString(){
-        return `[x:${this.x},y:${this.y},z:${this.z}, id:${this.id}, decendents:${this.getAllNodesBelow().length-1}, isLeaf:${this.isLeaf()}]`
+    toString() {
+        return `[x:${this.x},y:${this.y},z:${this.z}, id:${
+            this.id
+        }, decendents:${
+            this.getAllNodesBelow().length - 1
+        }, isLeaf:${this.isLeaf()}]`
     }
 }
 
