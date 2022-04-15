@@ -276,34 +276,59 @@ async function main() {
             // reset override material
             scene.overrideMaterial = null
 
+            // test
+            updateTiles(indexData, zoomData)
+
             // set flag to false
             window.tilesNeedUpdate = false
-            // test
-            const tileZooms = await readTileData(
+        }
+
+        tileRenderer.render(scene, tileCam)
+
+        group.visible = true
+        if (reset) {
+            bboxGroup.visible = true
+        }
+
+        // regular render
+        renderer.render(scene, camera)
+        requestAnimationFrame(animate)
+    }
+
+    window.busySplitting = false
+    const updateTiles = async function (indexData, zoomData) {
+        if (!window.busySplitting) {
+            window.busySplitting = true
+            const tileZooms = readTileData(
                 tileTree,
                 indexData,
                 zoomData,
                 tileCam.width,
                 tileCam.height
             )
+
+            const promises = []
+
             // split
             const tooLow = tileZooms.filter((t) => t.tooLow)
             for (let t of tooLow) {
                 if (!t.tile.isBusy()) {
                     //console.log('splitting', t.tile.toString())
-                    splitNode(
-                        t.tile,
-                        scene,
-                        bboxGroup,
-                        martiniParams.error,
-                        globeReference,
-                        elevationMaterial
-                    ).then(() => {
-                        //console.log('done splitting')
-                        window.tilesNeedUpdate = true
-                    })
+                    promises.push(
+                        splitNode(
+                            t.tile,
+                            scene,
+                            bboxGroup,
+                            martiniParams.error,
+                            globeReference,
+                            elevationMaterial
+                        ).then(() => {
+                            window.tilesNeedUpdate = true
+                        })
+                    )
                 }
             }
+
             // prune
             const tilesWithTooMuchDetail = tileZooms
                 .filter((t) => t.tooHigh)
@@ -319,27 +344,21 @@ async function main() {
                 if (canBePruned && siblingsNotBusy) {
                     // remove siblings and add parent's mesh
                     console.log('TODO Need to prune', t.toString())
+                    //promises.push(combineNode())
                 }
             }
+
+            Promise.all(promises).then(() => {
+                window.busySplitting = false
+            })
         }
-
-        tileRenderer.render(scene, tileCam)
-
-        group.visible = true
-        if (reset) {
-            bboxGroup.visible = true
-        }
-
-        // regular render
-        renderer.render(scene, camera)
-        requestAnimationFrame(animate)
     }
 
     // start animating
     animate()
 }
 
-async function readTileData(tileTree, indexData, zoomData, width, height) {
+function readTileData(tileTree, indexData, zoomData, width, height) {
     let tiles = {}
     for (let j = 0; j < height; j++) {
         for (let i = 0; i < width; i++) {
@@ -360,11 +379,11 @@ async function readTileData(tileTree, indexData, zoomData, width, height) {
 
             if (zoom !== 256 * 255 && index !== 255 * 256) {
                 if (tiles[index] !== undefined) {
-                    if (!tiles[index].includes(zoom)) {
-                        tiles[index].push(zoom)
+                    if (tiles[index] < zoom) {
+                        tiles[index] = zoom
                     }
                 } else {
-                    tiles[index] = [zoom]
+                    tiles[index] = zoom
                 }
             }
         }
@@ -374,30 +393,29 @@ async function readTileData(tileTree, indexData, zoomData, width, height) {
     for (let i in tiles) {
         let tile = tileTree.getNodeByID(i)
 
-        let maxZ = tiles[i].sort()[tiles[i].length - 1]
         if (!tile) {
             console.log('tile not found', i)
         } else if (!tile.isLeaf()) {
             //console.log('not a leaf', tile.toString())
-        } else if (tile.z > maxZ) {
-            tileResults.push({ tile, tooHigh: true, maxZ })
+        } else if (tile.z > tiles[i]) {
+            tileResults.push({ tile, tooHigh: true, zoom: tiles[i] })
             /*console.log(
                 'tile: ' +
                     i +
                     ', zoom: ' +
                     tile.z +
                     ', go down in resolution to ' +
-                    maxZ
+                    tiles[i]
             )*/
-        } else if (tile.z < maxZ) {
-            tileResults.push({ tile, tooLow: true, maxZ })
+        } else if (tile.z < tiles[i]) {
+            tileResults.push({ tile, tooLow: true, zoom: tiles[i] })
             /*console.log(
                 'tile: ' +
                     i +
                     ', zoom: ' +
                     tile.z +
                     ', go up in resolution ' +
-                    maxZ
+                    tiles[i]
             )*/
         } else {
             tileResults.push({ tile, justRight: true })
@@ -467,22 +485,19 @@ async function combineAllTiles(
         await parent.getThreeMesh(error, globeReference.getMatrix(), material)
         return parent
     })
-    Promise.all(promises)
-        .then((parents) => {
-            for (let i in parents) {
-                let children = parents[i].getChildren()
-                for (let j in children) {
-                    scene.remove(children[j].threeMesh)
-                    group.remove(children[j].bbox)
-                    tileTree.removeNode(children[j])
-                }
-                scene.add(parents[i].threeMesh)
-                group.add(parents[i].bbox)
+    Promise.all(promises).then((parents) => {
+        for (let i in parents) {
+            let children = parents[i].getChildren()
+            for (let j in children) {
+                scene.remove(children[j].threeMesh)
+                group.remove(children[j].bbox)
+                tileTree.removeNode(children[j])
             }
-        })
-        .then(() => {
-            window.tilesNeedUpdate = true
-        })
+            scene.add(parents[i].threeMesh)
+            group.add(parents[i].bbox)
+        }
+        window.tilesNeedUpdate = true
+    })
 }
 
 async function combineNode(
