@@ -65,6 +65,7 @@ export function geometryFromMartiniMesh(
     mesh,
     elevation,
     bounds,
+    index,
     matrix = new THREE.Matrix3()
 ) {
     if (mesh && bounds) {
@@ -85,7 +86,7 @@ export function geometryFromMartiniMesh(
         geometry.setAttribute(
             'tileIndex',
             new THREE.BufferAttribute(
-                new Float32Array(maxPoints).fill(bounds.index),
+                new Float32Array(maxPoints).fill(index),
                 1
             )
         )

@@ -39,6 +39,16 @@ export class LatLngBounds {
     get ur() {
         return new LatLng(this.north, this.east)
     }
+    getBoundsPadded(paddingRatio) {
+        const paddingLat = (this.north - this.south) * paddingRatio
+        const paddingLng = (this.east - this.west) * paddingRatio
+        return new LatLngBounds(
+            this.south - paddingLat,
+            this.west - paddingLng,
+            this.north + paddingLat,
+            this.east + paddingLng
+        )
+    }
 }
 
 /**
