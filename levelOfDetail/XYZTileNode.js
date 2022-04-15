@@ -122,15 +122,10 @@ export class XYZTileNode {
      */
     getBounds() {
         const bounds = getTileBounds(this.x, this.y, this.z)
-        bounds.index = this.id
         if (this.PAD_SIDES_TO_REMOVE_SEAMS) {
             // stretch the bounds to the edge of the tile. This is to minimize gaps in the mesh.
-            const latPadding = (bounds.north - bounds.south) / 257
-            const lngPadding = (bounds.east - bounds.west) / 257
-            bounds.north = bounds.north + latPadding
-            bounds.south = bounds.south - latPadding
-            bounds.east = bounds.east + lngPadding
-            bounds.west = bounds.west - lngPadding
+            const bounds2 = bounds.getBoundsPadded(1/257)
+            return bounds2
         }
         return bounds
     }
@@ -177,14 +172,16 @@ export class XYZTileNode {
                     marty,
                     this.elevation,
                     bounds,
+                    this.id,
                     homeMatrix
                 )
                 geometry.computeBoundingBox()
                 this.threeMesh = new THREE.Mesh(geometry, material)
                 //
                 // Bounding box for the mesh
-                const llECEF = lla_ecef(bounds.south, bounds.west, 0)
-                const urECEF = lla_ecef(bounds.north, bounds.east, 0)
+                const bounds2 = bounds.getBoundsPadded(-1/256)
+                const llECEF = lla_ecef(bounds2.south, bounds2.west, 0)
+                const urECEF = lla_ecef(bounds2.north, bounds2.east, 0)
                 const llView = new THREE.Vector3(...llECEF).applyMatrix4(
                     homeMatrix
                 )
