@@ -7,6 +7,7 @@ import mapboxMartini from 'https://cdn.skypack.dev/@mapbox/martini'
 import { getAndDecodeTerrariumElevationTile } from './mapzenTiles.js'
 import { updateGeometry, geometryFromMartiniMesh } from './geometryUtils.js'
 import * as THREE from 'three'
+import { lla_ecef } from './ECEF.js'
 
 /**
  *   A tree structure to hold slippy tiles, and their 3d meshes.
@@ -180,16 +181,26 @@ export class XYZTileNode {
                 )
                 geometry.computeBoundingBox()
                 this.threeMesh = new THREE.Mesh(geometry, material)
+                //
+                // Bounding box for the mesh
+                const llECEF = lla_ecef(bounds.south, bounds.west, 0)
+                const urECEF = lla_ecef(bounds.north, bounds.east, 0)
+                const llView = new THREE.Vector3(...llECEF).applyMatrix4(
+                    homeMatrix
+                )
+                const urView = new THREE.Vector3(...urECEF).applyMatrix4(
+                    homeMatrix
+                )
                 this.bbox = new THREE.Box3Helper(
                     new THREE.Box3(
                         new THREE.Vector3(
-                            geometry.boundingBox.min.x,
-                            geometry.boundingBox.min.y,
+                            Math.min(llView.x, urView.x),
+                            Math.min(llView.y, urView.y),
                             0
                         ),
                         new THREE.Vector3(
-                            geometry.boundingBox.max.x,
-                            geometry.boundingBox.max.y,
+                            Math.max(llView.x, urView.x),
+                            Math.max(llView.y, urView.y),
                             1
                         )
                     ),
