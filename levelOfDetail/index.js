@@ -54,7 +54,7 @@ async function main() {
     // orbit controls setup
     const controls = new OrbitControls(camera, renderer.domElement)
     controls.enablePan = false
-    controls.maxDistance = 15
+    controls.maxDistance = 20
     controls.maxPolarAngle = Math.PI / 2
 
     // resize function for window
