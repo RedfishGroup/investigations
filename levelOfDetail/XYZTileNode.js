@@ -169,7 +169,6 @@ export class XYZTileNode {
                     this.getBounds(),
                     homeMatrix
                 )
-                this.bbox.update()
             } else {
                 const bounds = this.getBounds()
                 const marty = await this.getMartiniMesh(martiniError)

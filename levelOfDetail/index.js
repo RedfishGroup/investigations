@@ -95,8 +95,28 @@ async function main() {
     //tileCam.lookAt(-0.5, 0.5, 0.3)
     tileCam.lookAt(0, 0, 0.3)
 
+    // orthographic renderer setup
+    const orthoRenderer = new THREE.WebGLRenderer()
+    orthoRenderer.setSize(width, width)
+    orthoRenderer.setClearColor('#000000')
+    const orthoParent = document.querySelector('#orthoDiv')
+    const orthoCanvas = orthoRenderer.domElement
+    orthoCanvas.onwheel = function (e) {
+        e.preventDefault()
+    }
+    orthoParent.appendChild(orthoCanvas)
+
+    // orthographic camera setup
+    const orthoCam = new THREE.OrthographicCamera(-10, 10, 10, -10, near, far)
+    orthoCam.position.set(0, 0, 10)
+    orthoCam.lookAt(0, 0, 0)
+
     // create scene
     const scene = new THREE.Scene()
+
+    // group for putting terrain tiles in
+    const terrainGroup = new THREE.Group()
+    scene.add(terrainGroup)
 
     // group for putting everything but terrain tiles in
     const group = new THREE.Group()
@@ -113,8 +133,8 @@ async function main() {
     group.add(axes)
 
     // put in x-y plane
-    const xyPlane = getXYPlane()
-    group.add(xyPlane)
+    //const xyPlane = getXYPlane()
+    //group.add(xyPlane)
 
     // camera viewing frustum
     const frustum = new Frustum({ far: 0.2, camera: tileCam })
@@ -186,7 +206,7 @@ async function main() {
     )
     elevationMaterial.setMin(threeMesh.geometry.attributes.elevation.min)
     elevationMaterial.setMax(threeMesh.geometry.attributes.elevation.max)
-    scene.add(threeMesh)
+    terrainGroup.add(threeMesh)
 
     // dat.gui menu setup
     const gui = new GUI()
@@ -212,7 +232,7 @@ async function main() {
                 add: async () => {
                     await splitAllTiles(
                         tileTree,
-                        scene,
+                        terrainGroup,
                         bboxGroup,
                         martiniParams.error,
                         globeReference,
@@ -230,7 +250,7 @@ async function main() {
                 combine: async () => {
                     await combineAllTiles(
                         tileTree,
-                        scene,
+                        terrainGroup,
                         bboxGroup,
                         martiniParams.error,
                         globeReference,
@@ -291,9 +311,8 @@ async function main() {
         }
 
         // regular render
-        scene.overrideMaterial = tileIndexColorMaterial
+        orthoRenderer.render(scene, orthoCam)
         renderer.render(scene, camera)
-        scene.overrideMaterial = null
         requestAnimationFrame(animate)
     }
 
@@ -331,7 +350,7 @@ async function main() {
                     promises.push(
                         splitNode(
                             result.tile,
-                            scene,
+                            terrainGroup,
                             bboxGroup,
                             martiniParams.error,
                             globeReference,
@@ -377,7 +396,7 @@ async function main() {
                         combineNode(
                             t.id,
                             tileTree,
-                            scene,
+                            terrainGroup,
                             bboxGroup,
                             martiniParams.error,
                             globeReference,
@@ -454,8 +473,8 @@ function readTileData(tileTree, indexData, zoomData, width, height) {
 
 async function splitAllTiles(
     tileTree,
-    scene,
-    group,
+    terrainGroup,
+    bboxGroup,
     error,
     globeReference,
     material
@@ -464,8 +483,8 @@ async function splitAllTiles(
         tileTree.getLeafNodes().map((node) => {
             return splitNode(
                 node,
-                scene,
-                group,
+                terrainGroup,
+                bboxGroup,
                 error,
                 globeReference,
                 material
@@ -476,26 +495,33 @@ async function splitAllTiles(
     })
 }
 
-async function splitNode(node, scene, group, error, globeReference, material) {
+async function splitNode(
+    node,
+    terrainGroup,
+    bboxGroup,
+    error,
+    globeReference,
+    material
+) {
     node.split()
     const promises = node.getChildren().map(async (child) => {
         await child.getThreeMesh(error, globeReference.getMatrix(), material)
         return child
     })
     return Promise.all(promises).then((results) => {
-        scene.remove(node.threeMesh)
-        group.remove(node.bbox)
+        terrainGroup.remove(node.threeMesh)
+        bboxGroup.remove(node.bbox)
         for (let i in results) {
-            scene.add(results[i].threeMesh)
-            group.add(results[i].bbox)
+            terrainGroup.add(results[i].threeMesh)
+            bboxGroup.add(results[i].bbox)
         }
     })
 }
 
 async function combineAllTiles(
     tileTree,
-    scene,
-    group,
+    terrainGroup,
+    bboxGroup,
     error,
     globeReference,
     material
@@ -514,12 +540,12 @@ async function combineAllTiles(
         for (let i in parents) {
             let children = parents[i].getChildren()
             for (let j in children) {
-                scene.remove(children[j].threeMesh)
-                group.remove(children[j].bbox)
+                terainGroup.remove(children[j].threeMesh)
+                bboxGroup.remove(children[j].bbox)
                 tileTree.removeNode(children[j])
             }
-            scene.add(parents[i].threeMesh)
-            group.add(parents[i].bbox)
+            terainGroup.add(parents[i].threeMesh)
+            bboxGroup.add(parents[i].bbox)
         }
         window.tilesNeedUpdate = true
     })
@@ -528,8 +554,8 @@ async function combineAllTiles(
 async function combineNode(
     id,
     tileTree,
-    scene,
-    group,
+    terrainGroup,
+    bboxGroup,
     error,
     globeReference,
     material
@@ -541,13 +567,13 @@ async function combineNode(
 
         let siblings = node.getSiblings()
         for (let i in siblings) {
-            scene.remove(siblings[i].threeMesh)
-            group.remove(siblings[i].bbox)
+            terrainGroup.remove(siblings[i].threeMesh)
+            bboxGroup.remove(siblings[i].bbox)
             tileTree.removeNode(siblings[i])
         }
 
-        scene.add(parent.threeMesh)
-        group.add(parent.bbox)
+        terrainGroup.add(parent.threeMesh)
+        bboxGroup.add(parent.bbox)
     }
 }
 
