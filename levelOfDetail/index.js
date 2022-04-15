@@ -305,17 +305,21 @@ async function main() {
                 }
             }
             // prune
-            const tooHigh = tileZooms.filter((t) => t.tooHigh)
-            for (let t of tooHigh) {
-                const siblings = t.tile.getSiblings()
+            const tilesWithTooMuchDetail = tileZooms
+                .filter((t) => t.tooHigh)
+                .map((x) => x.tile)
+            for (let t of tilesWithTooMuchDetail) {
+                // if all siblings have too much detail then they are prunable
+                const siblings = t.getSiblings()
                 const canBePruned = siblings.every((s) => {
-                    return (
-                        tooHigh.find((s2) => {
-                            s2.tile === s
-                        }) >= 0
-                    )
+                    return tilesWithTooMuchDetail.includes(s)
                 })
-                //console.log('too high', t.tile.id, canBePruned)
+                // make sure no siblings are busy
+                const siblingsNotBusy = siblings.every((s) => !s.isBusy())
+                if (canBePruned && siblingsNotBusy) {
+                    // remove siblings and add parents mesh
+                    console.log('TODO Need to prune', t.toString())
+                }
             }
         }
 

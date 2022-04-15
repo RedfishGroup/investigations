@@ -320,12 +320,16 @@ export class XYZTileNode {
         return this._isBusy
     }
 
-    toString() {
+    toFullString() {
         const allNodes = this.getAllNodesBelow()
         const nodeStrings = allNodes.map((node) => {
             return ` [x:${node.x},y:${node.y},z:${node.z}, id:${node.id}]`
         })
         return `total node count: ${allNodes.length} ${nodeStrings.join(', ')}`
+    }
+
+    toString(){
+        return `[x:${this.x},y:${this.y},z:${this.z}, id:${this.id}, decendents:${this.getAllNodesBelow().length-1}, isLeaf:${this.isLeaf()}]`
     }
 }
 
