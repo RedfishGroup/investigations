@@ -151,6 +151,23 @@ async function main() {
 
     group.add(frustum)
 
+    const lookVector = new THREE.ArrowHelper(
+        new THREE.Vector3(0, 1, -0.1),
+        tileCam.position,
+        20,
+        0xff0000,
+        0.3,
+        0.2
+    )
+    lookVector.children[0].renderOrder = 1000
+    lookVector.children[1].renderOrder = 1000
+    lookVector.children[0].material.depthTest = false
+    lookVector.children[1].material.depthTest = false
+    lookVector.children[0].material.depthWrite = false
+    lookVector.children[1].material.depthWrite = false
+
+    group.add(lookVector)
+
     const center = {
         // Albuquerque
         //Latitude: 35.19251772180017,
@@ -273,6 +290,7 @@ async function main() {
         tileCam.updateMatrix()
         tileCam.updateProjectionMatrix()
         frustum.updatePosition()
+        lookVector.setDirection(lookVec)
         window.tilesNeedUpdate = true
     })
 
@@ -323,8 +341,10 @@ async function main() {
             bboxGroup.visible = true
         }
 
-        // regular render
+        // orthographic view render
         orthoRenderer.render(scene, orthoCam)
+
+        // regular render
         renderer.render(scene, camera)
         requestAnimationFrame(animate)
     }
@@ -433,8 +453,8 @@ async function main() {
 
 function readTileData(tileTree, indexData, zoomData, width, height) {
     let tiles = {}
-    for (let j = 0; j < height; j++) {
-        for (let i = 0; i < width; i++) {
+    for (let j = height - 1; j >= 0; j--) {
+        for (let i = width - 1; i >= 0; i--) {
             let index = unpackPixel(
                 i / width,
                 j / height,
