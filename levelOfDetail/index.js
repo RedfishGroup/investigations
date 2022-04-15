@@ -317,7 +317,7 @@ async function main() {
                 // make sure no siblings are busy
                 const siblingsNotBusy = siblings.every((s) => !s.isBusy())
                 if (canBePruned && siblingsNotBusy) {
-                    // remove siblings and add parents mesh
+                    // remove siblings and add parent's mesh
                     console.log('TODO Need to prune', t.toString())
                 }
             }
