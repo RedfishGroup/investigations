@@ -24,8 +24,6 @@ import { getTileBounds, latLngToSlippyXYZ } from './utils.js'
 
 import { XYZTileNode } from './XYZTileNode.js'
 
-console.log(GUI)
-
 async function main() {
     // renderer setup
     const parent = document.querySelector('#threeDiv')
@@ -92,8 +90,12 @@ async function main() {
     tileCam.up.set(0, 0, 1)
     tileCam.updateMatrix()
     tileCam.updateProjectionMatrix()
-    //tileCam.lookAt(-0.5, 0.5, 0.3)
-    tileCam.lookAt(0, 0, 0.3)
+    tileCam.lookAt(
+        new THREE.Vector3().addVectors(
+            new THREE.Vector3(0, 1, -0.2),
+            tileCam.position
+        )
+    )
 
     // orthographic renderer setup
     const orthoRenderer = new THREE.WebGLRenderer()
@@ -107,7 +109,7 @@ async function main() {
     orthoParent.appendChild(orthoCanvas)
 
     // orthographic camera setup
-    const orthoCam = new THREE.OrthographicCamera(-10, 10, 10, -10, near, far)
+    const orthoCam = new THREE.OrthographicCamera(-15, 15, 15, -15, near, far)
     orthoCam.position.set(0, 0, 10)
     orthoCam.lookAt(0, 0, 0)
 
@@ -138,20 +140,9 @@ async function main() {
 
     // camera viewing frustum
     const frustum = new Frustum({ far: 0.2, camera: tileCam })
-    frustum.position.set(
-        tileCam.position.x,
-        tileCam.position.y,
-        tileCam.position.z
-    )
-    frustum.rotation.set(
-        tileCam.rotation.x,
-        tileCam.rotation.y,
-        tileCam.rotation.z
-    )
+    frustum.updatePosition()
 
     group.add(frustum)
-
-    frustum.updateGeometry()
 
     const center = {
         // Albuquerque
@@ -179,12 +170,12 @@ async function main() {
     })
 
     let martiniParams = { error: 1 }
-
     let materialParams = {
         side: THREE.BackSide,
         color: 0xffaa00,
         wireframe: false,
     }
+    let cameraParams = { angle: 0 }
 
     const elevationMaterial = new ElevationShaderMaterial(materialParams)
     const depthMaterial = new DepthShaderMaterial(materialParams)
@@ -215,10 +206,10 @@ async function main() {
     materialGUI.addColor(materialParams, 'color').onChange((color) => {
         elevationMaterial.setColor(color)
     })
-    materialGUI.add(bboxGroup, 'visible').name('bounding boxes')
     materialGUI.add(materialParams, 'wireframe').onChange((bool) => {
         elevationMaterial.wireframe = bool
     })
+    materialGUI.add(bboxGroup, 'visible').name('bounding boxes')
     const martiniGUI = gui.addFolder('Martini')
     martiniGUI.open()
     martiniGUI.add(martiniParams, 'error', 0, 20, 0.5).onChange((error) => {
@@ -262,6 +253,19 @@ async function main() {
             'combine'
         )
         .name('combine all tiles')
+    const camGUI = gui.addFolder('Camera')
+    camGUI.open()
+    camGUI.add(cameraParams, 'angle', 0, 2 * Math.PI).onChange((angle) => {
+        let lookVec = new THREE.Vector3(0, 1, -0.1).applyAxisAngle(
+            new THREE.Vector3(0, 0, 1),
+            angle
+        )
+        tileCam.lookAt(
+            new THREE.Vector3().addVectors(tileCam.position, lookVec)
+        )
+        frustum.updatePosition()
+        window.tilesNeedUpdate = true
+    })
 
     window.tilesNeedUpdate = true
     // animation function

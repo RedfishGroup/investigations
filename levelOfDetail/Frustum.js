@@ -72,4 +72,17 @@ export class Frustum extends THREE.LineSegments {
         this.geometry.applyMatrix4(this.camera.screenToCameraMatrix)
         this.geometry.attributes.position.needsUpdate = true
     }
+
+    updatePosition() {
+        this.position.set(
+            this.camera.position.x,
+            this.camera.position.y,
+            this.camera.position.z
+        )
+        this.rotation.set(
+            this.camera.rotation.x,
+            this.camera.rotation.y,
+            this.camera.rotation.z
+        )
+    }
 }
