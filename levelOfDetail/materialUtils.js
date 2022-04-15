@@ -109,7 +109,6 @@ export class DepthShaderMaterial extends THREE.ShaderMaterial {
 
         const vertexShader = `
             precision highp float;
-
             varying vec3 vPosition;
 
             void main() {
@@ -122,7 +121,6 @@ export class DepthShaderMaterial extends THREE.ShaderMaterial {
         const fragmentShader =
             `
             precision highp float;
-        
             varying vec3 vPosition;
         
             ${packNumberToRGBA}
@@ -152,9 +150,7 @@ export class TilePickingMaterial extends THREE.ShaderMaterial {
 
         const vertexShader = `
             precision highp float;
-
             attribute float tileIndex;
-
             varying float vtileIndex;
 
             void main() {
@@ -167,7 +163,6 @@ export class TilePickingMaterial extends THREE.ShaderMaterial {
         const fragmentShader =
             `
             precision highp float;
-
             varying float vtileIndex;
 
             ${packNumberToRGBA}
@@ -197,9 +192,7 @@ export class ZoomPickingMaterial extends THREE.ShaderMaterial {
 
         const vertexShader = `
             precision highp float;
-
             attribute float zoom;
-
             varying float vZoomLevel;
 
             void main() {
@@ -212,7 +205,6 @@ export class ZoomPickingMaterial extends THREE.ShaderMaterial {
         const fragmentShader =
             `
             precision highp float;
-
             varying float vZoomLevel;
 
             ${packNumberToRGBA}
