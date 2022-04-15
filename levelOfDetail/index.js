@@ -92,10 +92,12 @@ async function main() {
     tileCam.updateProjectionMatrix()
     tileCam.lookAt(
         new THREE.Vector3().addVectors(
-            new THREE.Vector3(0, 1, -0.2),
+            new THREE.Vector3(0, 1, -0.1),
             tileCam.position
         )
     )
+    tileCam.updateMatrix()
+    tileCam.updateProjectionMatrix()
 
     // orthographic renderer setup
     const orthoRenderer = new THREE.WebGLRenderer()
@@ -112,6 +114,8 @@ async function main() {
     const orthoCam = new THREE.OrthographicCamera(-15, 15, 15, -15, near, far)
     orthoCam.position.set(0, 0, 10)
     orthoCam.lookAt(0, 0, 0)
+    orthoCam.updateMatrix()
+    orthoCam.updateProjectionMatrix()
 
     // create scene
     const scene = new THREE.Scene()
@@ -135,11 +139,14 @@ async function main() {
     group.add(axes)
 
     // put in x-y plane
-    //const xyPlane = getXYPlane()
-    //group.add(xyPlane)
+    const xyPlane = getXYPlane()
+    group.add(xyPlane)
 
     // camera viewing frustum
-    const frustum = new Frustum({ far: 0.2, camera: tileCam })
+    const frustum = new Frustum({ far: 10, color: 0xff0000, camera: tileCam })
+    frustum.renderOrder = 1000
+    frustum.material.depthTest = false
+    frustum.material.depthWrite = false
     frustum.updatePosition()
 
     group.add(frustum)
@@ -263,6 +270,8 @@ async function main() {
         tileCam.lookAt(
             new THREE.Vector3().addVectors(tileCam.position, lookVec)
         )
+        tileCam.updateMatrix()
+        tileCam.updateProjectionMatrix()
         frustum.updatePosition()
         window.tilesNeedUpdate = true
     })
