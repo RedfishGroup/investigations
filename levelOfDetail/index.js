@@ -164,7 +164,7 @@ async function main() {
         Latitude: 27.9881,
         Longitude: 86.925,
     }
-    const zoom = 7
+    const zoom = 4
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
     const bounds = getTileBounds(x, y, z)

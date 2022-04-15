@@ -192,12 +192,12 @@ export class XYZTileNode {
                         new THREE.Vector3(
                             Math.min(llView.x, urView.x),
                             Math.min(llView.y, urView.y),
-                            0
+                            Math.floor(Math.min(llView.z-1, urView.z-1))
                         ),
                         new THREE.Vector3(
                             Math.max(llView.x, urView.x),
                             Math.max(llView.y, urView.y),
-                            1
+                            Math.ceil(Math.max(llView.z+1, urView.z+1))
                         )
                     ),
                     0xffffff
