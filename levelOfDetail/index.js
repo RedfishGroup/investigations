@@ -4,7 +4,6 @@ import { GUI } from 'https://unpkg.com/dat.gui@0.7.7/build/dat.gui.module.js'
 import { OrbitControls } from 'https://unpkg.com/three@0.139.2/examples/jsm/controls/OrbitControls.js'
 
 import { Frustum } from './Frustum.js'
-import { getXYPlane } from './geoTools.js'
 import { GlobeReference } from './GlobeReference.js'
 import { CalibratedCamera } from './CalibratedCamera.js'
 
@@ -138,10 +137,6 @@ async function main() {
     const axes = new THREE.AxesHelper(2)
     group.add(axes)
 
-    // put in x-y plane
-    const xyPlane = getXYPlane()
-    group.add(xyPlane)
-
     // camera viewing frustum
     const frustum = new Frustum({ far: 10, color: 0xff0000, camera: tileCam })
     frustum.renderOrder = 1000
@@ -181,7 +176,7 @@ async function main() {
         Latitude: 27.9881,
         Longitude: 86.925,
     }
-    const zoom = 7
+    const zoom = 5
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
     const bounds = getTileBounds(x, y, z)
@@ -213,11 +208,13 @@ async function main() {
         depthTexture: depthTarget.texture,
     })
 
+    window.material = elevationMaterial
+
     const tileTree = new XYZTileNode(x, y, z, null)
     const threeMesh = await tileTree.getThreeMesh(
         martiniParams.error,
         globeReference.getMatrix(),
-        elevationMaterial
+        material
     )
     elevationMaterial.setMin(threeMesh.geometry.attributes.elevation.min)
     elevationMaterial.setMax(threeMesh.geometry.attributes.elevation.max)
@@ -227,6 +224,17 @@ async function main() {
     const gui = new GUI()
     const materialGUI = gui.addFolder('Material')
     materialGUI.open()
+    materialGUI
+        .add({ material: elevationMaterial }, 'material', {
+            elevation: elevationMaterial,
+            tiles: tileIndexColorMaterial,
+        })
+        .onChange((newMaterial) => {
+            window.material = newMaterial
+            for (let i in terrainGroup.children) {
+                terrainGroup.children.material = newMaterial
+            }
+        })
     materialGUI.addColor(materialParams, 'color').onChange((color) => {
         elevationMaterial.setColor(color)
     })
@@ -237,7 +245,7 @@ async function main() {
     const martiniGUI = gui.addFolder('Martini')
     martiniGUI.open()
     martiniGUI.add(martiniParams, 'error', 0, 20, 0.5).onChange((error) => {
-        updateMeshes(error, tileTree, globeReference, elevationMaterial)
+        updateMeshes(error, tileTree, globeReference, window.material)
     })
     const lodGUI = gui.addFolder('Level of Detail')
     lodGUI.open()
@@ -251,7 +259,7 @@ async function main() {
                         bboxGroup,
                         martiniParams.error,
                         globeReference,
-                        elevationMaterial
+                        window.material
                     )
                     console.log('done', tileTree, tileTree.toString())
                 },
@@ -269,7 +277,7 @@ async function main() {
                         bboxGroup,
                         martiniParams.error,
                         globeReference,
-                        elevationMaterial
+                        window.material
                     )
                     console.log('done', tileTree, tileTree.toString())
                 },
@@ -291,6 +299,8 @@ async function main() {
         tileCam.updateProjectionMatrix()
         frustum.updatePosition()
         lookVector.setDirection(lookVec)
+
+        window.pruneFirst = true
         window.tilesNeedUpdate = true
     })
 
@@ -351,7 +361,7 @@ async function main() {
 
     window.busySplitting = false
     window.busyPruning = false
-    const updateTiles = async function (indexData, zoomData) {
+    const updateTiles = function (indexData, zoomData) {
         if (!window.busySplitting && !window.busyPruning) {
             const tileData = readTileData(
                 tileTree,
@@ -361,7 +371,7 @@ async function main() {
                 tileCam.height
             )
 
-            if (Object.keys(tileData.tooLow).length > 0) {
+            if (!window.pruneFirst && Object.keys(tileData.tooLow).length > 0) {
                 splitTiles(tileData)
             } else {
                 pruneTiles(tileData)
@@ -387,7 +397,7 @@ async function main() {
                             bboxGroup,
                             martiniParams.error,
                             globeReference,
-                            elevationMaterial
+                            window.material
                         ).then(() => {
                             window.tilesNeedUpdate = true
                         })
@@ -408,6 +418,7 @@ async function main() {
             const promises = []
 
             // prune
+            const tilesThatAreTooLow = tileData.tooLow
             const tilesThatAreJustRight = tileData.justRight
             const tilesWithTooMuchDetail = tileData.tooHigh
             for (let t of tileTree.getLeafNodes()) {
@@ -416,8 +427,9 @@ async function main() {
                 const canBePruned = siblings.every((s) => {
                     return (
                         s.isLeaf() &&
+                        !tilesThatAreTooLow[s.id] &&
                         !tilesThatAreJustRight[s.id] &&
-                        (!tileData.ids.includes(t.id) ||
+                        (!tileData.ids.includes(s.id) ||
                             tilesWithTooMuchDetail[s.id] !== undefined)
                     )
                 })
@@ -433,7 +445,7 @@ async function main() {
                             bboxGroup,
                             martiniParams.error,
                             globeReference,
-                            elevationMaterial
+                            window.material
                         ).then(() => {
                             window.tilesNeedUpdate = true
                         })
@@ -443,6 +455,10 @@ async function main() {
 
             Promise.all(promises).then(() => {
                 window.busyPruning = false
+                if (window.pruneFirst) {
+                    window.tilesNeedUpdate = true
+                }
+                window.pruneFirst = false
             })
         }
     }
@@ -573,11 +589,11 @@ async function combineAllTiles(
         for (let i in parents) {
             let children = parents[i].getChildren()
             for (let j in children) {
-                terainGroup.remove(children[j].threeMesh)
+                terrainGroup.remove(children[j].threeMesh)
                 bboxGroup.remove(children[j].bbox)
                 tileTree.removeNode(children[j])
             }
-            terainGroup.add(parents[i].threeMesh)
+            terrainGroup.add(parents[i].threeMesh)
             bboxGroup.add(parents[i].bbox)
         }
         window.tilesNeedUpdate = true
@@ -594,8 +610,8 @@ async function combineNode(
     material
 ) {
     let node = tileTree.getNodeByID(id)
-    if (node) {
-        let parent = node.parent
+    let parent = node && node.parent
+    if (node && parent) {
         await parent.getThreeMesh(error, globeReference.getMatrix(), material)
 
         let siblings = node.getSiblings()

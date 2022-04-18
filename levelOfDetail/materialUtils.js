@@ -283,7 +283,7 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
                 float PI = 3.141592;
                 float radiusOfEarth = 6378100.;
                 float error2 = abs(error);
-                float newZoom = log2((2.*PI*radiusOfEarth) / (256. * error2)) ;
+                float newZoom = log2((2.*PI*radiusOfEarth) / (256. * error2));
                 newZoom = round(newZoom);
                 return newZoom;
             }
