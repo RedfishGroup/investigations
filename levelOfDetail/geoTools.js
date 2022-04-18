@@ -52,20 +52,17 @@ export function calculateZoom(bounds) {
     }
 }
 
-function calculateRadius(bounds) {
+export function calculateRadius(bounds) {
     let north = bounds.north
     let south = bounds.south
     let east = bounds.east
     let west = bounds.west
-    return (
-        5 *
-        Math.sqrt(
-            (4 * Math.PI) /
-                ((Math.sin(north * (Math.PI / 180)) -
-                    Math.sin(south * (Math.PI / 180))) *
-                    (east - west) *
-                    (Math.PI / 180))
-        )
+    return Math.sqrt(
+        Math.PI /
+            ((Math.sin(north * (Math.PI / 180)) -
+                Math.sin(south * (Math.PI / 180))) *
+                (east - west) *
+                (Math.PI / 180))
     )
 }
 

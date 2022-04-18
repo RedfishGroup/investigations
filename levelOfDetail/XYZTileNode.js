@@ -187,7 +187,35 @@ export class XYZTileNode {
                 const urView = new THREE.Vector3(...urECEF).applyMatrix4(
                     homeMatrix
                 )
-                this.bbox = new THREE.Box3Helper(
+                this.bbox = new THREE.LineSegments(
+                    new THREE.BufferGeometry().setFromPoints([
+                        new THREE.Vector3(
+                            Math.min(llView.x, urView.x),
+                            Math.min(llView.y, urView.y),
+                            0
+                        ),
+                        new THREE.Vector3(
+                            Math.max(llView.x, urView.x),
+                            Math.min(llView.y, urView.y),
+                            0
+                        ),
+                        new THREE.Vector3(
+                            Math.min(llView.x, urView.x),
+                            Math.max(llView.y, urView.y),
+                            0
+                        ),
+                        new THREE.Vector3(
+                            Math.min(llView.x, urView.x),
+                            Math.min(llView.y, urView.y),
+                            0
+                        ),
+                    ]),
+                    new THREE.LineBasicMaterial({ color: 0xffffff })
+                )
+                this.bbox.renderOrder = 900
+                this.bbox.material.depthTest = false
+                this.bbox.material.depthWrite = false
+                /*this.bbox = new THREE.Box3Helper(
                     new THREE.Box3(
                         new THREE.Vector3(
                             Math.min(llView.x, urView.x),
@@ -201,7 +229,7 @@ export class XYZTileNode {
                         )
                     ),
                     0xffffff
-                )
+                )*/
             }
             this._isBusy = false
         }

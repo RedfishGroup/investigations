@@ -15,12 +15,13 @@ import {
     renderToUint8Array,
     DepthShaderMaterial,
     TilePickingMaterial,
+    TileIndexColorMaterial,
     ElevationShaderMaterial,
     TileNeedsUpdateMaterial,
-    TileIndexColorMaterial,
+    DepthColorShaderMaterial,
 } from './materialUtils.js'
 
-import { getTileBounds, latLngToSlippyXYZ } from './utils.js'
+import { latLngToSlippyXYZ } from './utils.js'
 
 import { XYZTileNode } from './XYZTileNode.js'
 
@@ -111,7 +112,7 @@ async function main() {
     orthoParent.appendChild(orthoCanvas)
 
     // orthographic camera setup
-    const orthoCam = new THREE.OrthographicCamera(-15, 15, 15, -15, near, far)
+    const orthoCam = new THREE.OrthographicCamera(-10, 10, 10, -10, near, far)
     orthoCam.position.set(0, 0, 10)
     orthoCam.lookAt(0, 0, 0)
     orthoCam.updateMatrix()
@@ -137,10 +138,6 @@ async function main() {
     // put in axes
     const axes = new THREE.AxesHelper(2)
     group.add(axes)
-
-    // put in x-y plane
-    const xyPlane = getXYPlane()
-    group.add(xyPlane)
 
     // camera viewing frustum
     const frustum = new Frustum({ far: 10, color: 0xff0000, camera: tileCam })
@@ -181,17 +178,14 @@ async function main() {
         Latitude: 27.9881,
         Longitude: 86.925,
     }
+<<<<<<< HEAD
     const zoom = 4
+=======
+    const zoom = 6
+>>>>>>> 5dcc11a25a1dcce6cf2fab6bf41aa8806a8af359
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
-    const bounds = getTileBounds(x, y, z)
-
-    const globeReference = new GlobeReference({
-        Latitude: bounds.center.lat,
-        Longitude: bounds.center.lng,
-        Elevation: 0,
-        zoom,
-    })
+    const globeReference = new GlobeReference({ x, y, z, scale: 10 })
 
     let martiniParams = { error: 1 }
     let materialParams = {
@@ -204,6 +198,7 @@ async function main() {
     const elevationMaterial = new ElevationShaderMaterial(materialParams)
     const depthMaterial = new DepthShaderMaterial(materialParams)
     const tileIndexMaterial = new TilePickingMaterial(materialParams)
+    const depthColorMaterial = new DepthColorShaderMaterial(materialParams)
     const tileIndexColorMaterial = new TileIndexColorMaterial(materialParams)
     const tileNeedsUpdateMaterial = new TileNeedsUpdateMaterial({
         fov: tileCam.vfov * (Math.PI / 180),
@@ -291,6 +286,7 @@ async function main() {
         tileCam.updateProjectionMatrix()
         frustum.updatePosition()
         lookVector.setDirection(lookVec)
+
         window.tilesNeedUpdate = true
     })
 
@@ -334,7 +330,9 @@ async function main() {
             window.tilesNeedUpdate = false
         }
 
+        scene.overrideMaterial = depthColorMaterial
         tileRenderer.render(scene, tileCam)
+        scene.overrideMaterial = null
 
         group.visible = true
         if (reset) {
@@ -346,12 +344,13 @@ async function main() {
 
         // regular render
         renderer.render(scene, camera)
+
         requestAnimationFrame(animate)
     }
 
     window.busySplitting = false
     window.busyPruning = false
-    const updateTiles = async function (indexData, zoomData) {
+    const updateTiles = function (indexData, zoomData) {
         if (!window.busySplitting && !window.busyPruning) {
             const tileData = readTileData(
                 tileTree,
@@ -361,16 +360,13 @@ async function main() {
                 tileCam.height
             )
 
-            if (Object.keys(tileData.tooLow).length > 0) {
-                splitTiles(tileData)
-            } else {
-                pruneTiles(tileData)
-            }
+            splitTiles(tileData)
+            pruneTiles(tileData)
         }
     }
 
     const splitTiles = async function (tileData) {
-        if (!window.busySplitting && !window.busyPruning) {
+        if (!window.busySplitting) {
             window.busySplitting = true
 
             const promises = []
@@ -402,12 +398,13 @@ async function main() {
     }
 
     const pruneTiles = async function (tileData) {
-        if (!window.busyPruning && !window.busySplitting) {
+        if (!window.busyPruning) {
             window.busyPruning = true
 
             const promises = []
 
             // prune
+            const tilesThatAreTooLow = tileData.tooLow
             const tilesThatAreJustRight = tileData.justRight
             const tilesWithTooMuchDetail = tileData.tooHigh
             for (let t of tileTree.getLeafNodes()) {
@@ -416,8 +413,9 @@ async function main() {
                 const canBePruned = siblings.every((s) => {
                     return (
                         s.isLeaf() &&
+                        !tilesThatAreTooLow[s.id] &&
                         !tilesThatAreJustRight[s.id] &&
-                        (!tileData.ids.includes(t.id) ||
+                        (!tileData.ids.includes(s.id) ||
                             tilesWithTooMuchDetail[s.id] !== undefined)
                     )
                 })
@@ -573,11 +571,11 @@ async function combineAllTiles(
         for (let i in parents) {
             let children = parents[i].getChildren()
             for (let j in children) {
-                terainGroup.remove(children[j].threeMesh)
+                terrainGroup.remove(children[j].threeMesh)
                 bboxGroup.remove(children[j].bbox)
                 tileTree.removeNode(children[j])
             }
-            terainGroup.add(parents[i].threeMesh)
+            terrainGroup.add(parents[i].threeMesh)
             bboxGroup.add(parents[i].bbox)
         }
         window.tilesNeedUpdate = true
@@ -594,8 +592,8 @@ async function combineNode(
     material
 ) {
     let node = tileTree.getNodeByID(id)
-    if (node) {
-        let parent = node.parent
+    let parent = node && node.parent
+    if (node && parent) {
         await parent.getThreeMesh(error, globeReference.getMatrix(), material)
 
         let siblings = node.getSiblings()

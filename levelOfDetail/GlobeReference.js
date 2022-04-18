@@ -1,40 +1,32 @@
 import * as THREE from 'three'
 
+import { getTileBounds } from './utils.js'
+import { calculateRadius } from './geoTools.js'
 import { ecef_lla, lla_ecef, a } from './ECEF.js'
 
 export class GlobeReference {
     constructor(options = {}) {
-        this.Latitude = options.Latitude || 35
-        this.Longitude = options.Longitude || -106
-        this.Elevation = options.Elevation || 0
-        this.zoom = options.zoom || 10
+        this.x = options.x
+        this.y = options.y
+        this.z = options.z
+        this.scale = options.scale || 1
 
-        this.scalingFactor = (100 * this.zoom) / a
+        this.setBounds(getTileBounds(this.x, this.y, this.z))
 
         this.object3D = new THREE.Object3D()
 
         this._updateMatrix()
     }
 
-    setZoom(zoom) {
-        this.zoom = zoom
-        this.scalingFactor = this.zoom / a
-        this._updateMatrix()
-    }
+    setBounds(bounds) {
+        this.bounds = bounds
+        this.Latitude = bounds.center.lat
+        this.Longitude = bounds.center.lng
+        this.Elevation = bounds.center.elev || 0
 
-    setCenter(Latitude, Longitude, Elevation) {
-        this.Latitude = Latitude
-        this.Longitude = Longitude
-        this.Elevation = Elevation
-        this._updateMatrix()
-    }
+        this.radius = calculateRadius(this.bounds)
 
-    setCenterAndZoom(Latitude, Longitude, Elevation, zoom) {
-        this.Latitude = Latitude
-        this.Longitude = Longitude
-        this.Elevation = Elevation
-        this.zoom = zoom
-        this._updateMatrix()
+        this.scalingFactor = (this.radius * this.scale) / a
     }
 
     _updateMatrix() {

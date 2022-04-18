@@ -283,7 +283,7 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
                 float PI = 3.141592;
                 float radiusOfEarth = 6378100.;
                 float error2 = abs(error);
-                float newZoom = log2((2.*PI*radiusOfEarth) / (256. * error2)) ;
+                float newZoom = log2((2.*PI*radiusOfEarth) / (256. * error2));
                 newZoom = round(newZoom);
                 return newZoom;
             }
@@ -370,6 +370,64 @@ export class TileIndexColorMaterial extends THREE.ShaderMaterial {
 
             void main() {
                 gl_FragColor = vec4(getColor(vTileIndex), 1.);
+            }
+        `
+
+        super({
+            side,
+            wireframe,
+            transparent,
+            vertexShader,
+            fragmentShader,
+        })
+    }
+}
+
+export class DepthColorShaderMaterial extends THREE.ShaderMaterial {
+    constructor(options = {}) {
+        const side = options.side || THREE.FrontSide
+        const wireframe = false
+        const transparent = false
+
+        const vertexShader = `
+            precision highp float;
+            varying vec3 vPosition;
+
+            void main() {
+                vPosition = position;
+
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);
+            }
+        `
+
+        const fragmentShader = `
+            precision highp float;
+
+            varying vec3 vPosition;
+
+            const float scale = 30.;
+            const vec3 colors[6] = vec3[6](
+                vec3(1., 0., 0.), vec3(1., 0.5, 0.), vec3(1., 1., 0.),
+                vec3(0., 1., 0.5), vec3(0., 0.5, 1.), vec3(0.5, 0., 1.)
+            );
+
+            vec3 getColor(const in float tileIndex) {
+                int length = colors.length();
+                float p = float(length) * (mod(tileIndex, scale) / scale);
+
+                int indexStart = int(floor(p));
+                int indexEnd = indexStart + 1;
+                if(indexEnd >= length) {
+                    indexEnd = 0;
+                }
+
+                float percent = (p) - floor(p);
+
+                return mix(colors[indexStart], colors[indexEnd], percent);
+            }
+
+            void main() {
+                gl_FragColor = vec4(getColor(distance(cameraPosition, vPosition)), 1.);
             }
         `
 
