@@ -300,7 +300,6 @@ async function main() {
         frustum.updatePosition()
         lookVector.setDirection(lookVec)
 
-        window.pruneFirst = true
         window.tilesNeedUpdate = true
     })
 
@@ -373,12 +372,6 @@ async function main() {
 
             splitTiles(tileData)
             pruneTiles(tileData)
-
-            /*if (!window.pruneFirst && Object.keys(tileData.tooLow).length > 0) {
-                splitTiles(tileData)
-            } else {
-                pruneTiles(tileData)
-            }*/
         }
     }
 
@@ -458,10 +451,6 @@ async function main() {
 
             Promise.all(promises).then(() => {
                 window.busyPruning = false
-                if (window.pruneFirst) {
-                    window.tilesNeedUpdate = true
-                }
-                window.pruneFirst = false
             })
         }
     }
