@@ -178,11 +178,7 @@ async function main() {
         Latitude: 27.9881,
         Longitude: 86.925,
     }
-<<<<<<< HEAD
-    const zoom = 4
-=======
     const zoom = 6
->>>>>>> 5dcc11a25a1dcce6cf2fab6bf41aa8806a8af359
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
     const globeReference = new GlobeReference({ x, y, z, scale: 10 })
