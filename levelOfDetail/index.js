@@ -208,13 +208,11 @@ async function main() {
         depthTexture: depthTarget.texture,
     })
 
-    window.material = elevationMaterial
-
     const tileTree = new XYZTileNode(x, y, z, null)
     const threeMesh = await tileTree.getThreeMesh(
         martiniParams.error,
         globeReference.getMatrix(),
-        material
+        elevationMaterial
     )
     elevationMaterial.setMin(threeMesh.geometry.attributes.elevation.min)
     elevationMaterial.setMax(threeMesh.geometry.attributes.elevation.max)
@@ -224,17 +222,14 @@ async function main() {
     const gui = new GUI()
     const materialGUI = gui.addFolder('Material')
     materialGUI.open()
-    materialGUI
-        .add({ material: elevationMaterial }, 'material', {
-            elevation: elevationMaterial,
-            tiles: tileIndexColorMaterial,
-        })
-        .onChange((newMaterial) => {
-            window.material = newMaterial
-            for (let i in terrainGroup.children) {
-                terrainGroup.children.material = newMaterial
-            }
-        })
+
+    window.overrideMaterial = null
+    let indices = { elevation: 0, 'tile colors': 1 }
+    let materials = [null, tileIndexColorMaterial]
+    materialGUI.add({ index: 0 }, 'index', indices).onChange((index) => {
+        window.overrideMaterial = materials[index]
+    })
+
     materialGUI.addColor(materialParams, 'color').onChange((color) => {
         elevationMaterial.setColor(color)
     })
@@ -245,7 +240,7 @@ async function main() {
     const martiniGUI = gui.addFolder('Martini')
     martiniGUI.open()
     martiniGUI.add(martiniParams, 'error', 0, 20, 0.5).onChange((error) => {
-        updateMeshes(error, tileTree, globeReference, window.material)
+        updateMeshes(error, tileTree, globeReference, elevationMaterial)
     })
     const lodGUI = gui.addFolder('Level of Detail')
     lodGUI.open()
@@ -259,7 +254,7 @@ async function main() {
                         bboxGroup,
                         martiniParams.error,
                         globeReference,
-                        window.material
+                        elevationMaterial
                     )
                     console.log('done', tileTree, tileTree.toString())
                 },
@@ -277,7 +272,7 @@ async function main() {
                         bboxGroup,
                         martiniParams.error,
                         globeReference,
-                        window.material
+                        elevationMaterial
                     )
                     console.log('done', tileTree, tileTree.toString())
                 },
@@ -354,7 +349,10 @@ async function main() {
         orthoRenderer.render(scene, orthoCam)
 
         // regular render
+        scene.overrideMaterial = window.overrideMaterial
         renderer.render(scene, camera)
+        scene.overrideMaterial = null
+
         requestAnimationFrame(animate)
     }
 
@@ -393,7 +391,7 @@ async function main() {
                             bboxGroup,
                             martiniParams.error,
                             globeReference,
-                            window.material
+                            elevationMaterial
                         ).then(() => {
                             window.tilesNeedUpdate = true
                         })
@@ -441,7 +439,7 @@ async function main() {
                             bboxGroup,
                             martiniParams.error,
                             globeReference,
-                            window.material
+                            elevationMaterial
                         ).then(() => {
                             window.tilesNeedUpdate = true
                         })
