@@ -1,4 +1,4 @@
-import { imageToImageData, latLngToSlippyXYZ } from './utils.js'
+import { imageToImageData, latLonToSlippyXYZ } from './utils.js'
 import DataSet from 'https://code.agentscript.org/src/DataSet.js'
 
 /**
@@ -24,7 +24,7 @@ export async function getAndDecodeTerrariumElevationTile(x, y, z) {
  * @returns Float64Array
  */
 export async function getAndDecodeMapzenElevationTileFromLatLng(lat, lng, z) {
-    const [x, y, zz] = latLngToSlippyXYZ(lat, lng, z)
+    const [x, y, zz] = latLonToSlippyXYZ(lat, lng, z)
     const result = await getAndDecodeTerrariumElevationTile(x, y, zz)
     return result
 }

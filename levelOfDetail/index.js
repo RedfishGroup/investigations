@@ -4,7 +4,6 @@ import { GUI } from 'https://unpkg.com/dat.gui@0.7.7/build/dat.gui.module.js'
 import { OrbitControls } from 'https://unpkg.com/three@0.139.2/examples/jsm/controls/OrbitControls.js'
 
 import { Frustum } from './Frustum.js'
-import { getXYPlane } from './geoTools.js'
 import { GlobeReference } from './GlobeReference.js'
 import { CalibratedCamera } from './CalibratedCamera.js'
 
@@ -21,7 +20,7 @@ import {
     DepthColorShaderMaterial,
 } from './materialUtils.js'
 
-import { latLngToSlippyXYZ } from './utils.js'
+import { latLonToSlippyXYZ } from './utils.js'
 
 import { XYZTileNode } from './XYZTileNode.js'
 
@@ -179,7 +178,7 @@ async function main() {
         Longitude: 86.925,
     }
     const zoom = 7
-    const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
+    const [x, y, z] = latLonToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
     const globeReference = new GlobeReference({ x, y, z, scale: 10 })
 
