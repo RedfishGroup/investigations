@@ -4,6 +4,7 @@ import { GUI } from 'https://unpkg.com/dat.gui@0.7.7/build/dat.gui.module.js'
 import { OrbitControls } from 'https://unpkg.com/three@0.139.2/examples/jsm/controls/OrbitControls.js'
 
 import { Frustum } from './Frustum.js'
+import { getXYPlane } from './geoTools.js'
 import { GlobeReference } from './GlobeReference.js'
 import { CalibratedCamera } from './CalibratedCamera.js'
 
@@ -14,12 +15,13 @@ import {
     renderToUint8Array,
     DepthShaderMaterial,
     TilePickingMaterial,
+    TileIndexColorMaterial,
     ElevationShaderMaterial,
     TileNeedsUpdateMaterial,
-    TileIndexColorMaterial,
+    DepthColorShaderMaterial,
 } from './materialUtils.js'
 
-import { getTileBounds, latLngToSlippyXYZ } from './utils.js'
+import { latLngToSlippyXYZ } from './utils.js'
 
 import { XYZTileNode } from './XYZTileNode.js'
 
@@ -110,7 +112,7 @@ async function main() {
     orthoParent.appendChild(orthoCanvas)
 
     // orthographic camera setup
-    const orthoCam = new THREE.OrthographicCamera(-15, 15, 15, -15, near, far)
+    const orthoCam = new THREE.OrthographicCamera(-10, 10, 10, -10, near, far)
     orthoCam.position.set(0, 0, 10)
     orthoCam.lookAt(0, 0, 0)
     orthoCam.updateMatrix()
@@ -176,17 +178,10 @@ async function main() {
         Latitude: 27.9881,
         Longitude: 86.925,
     }
-    const zoom = 5
+    const zoom = 6
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
-    const bounds = getTileBounds(x, y, z)
-
-    const globeReference = new GlobeReference({
-        Latitude: bounds.center.lat,
-        Longitude: bounds.center.lng,
-        Elevation: 0,
-        zoom,
-    })
+    const globeReference = new GlobeReference({ x, y, z, scale: 10 })
 
     let martiniParams = { error: 1 }
     let materialParams = {
@@ -199,6 +194,7 @@ async function main() {
     const elevationMaterial = new ElevationShaderMaterial(materialParams)
     const depthMaterial = new DepthShaderMaterial(materialParams)
     const tileIndexMaterial = new TilePickingMaterial(materialParams)
+    const depthColorMaterial = new DepthColorShaderMaterial(materialParams)
     const tileIndexColorMaterial = new TileIndexColorMaterial(materialParams)
     const tileNeedsUpdateMaterial = new TileNeedsUpdateMaterial({
         fov: tileCam.vfov * (Math.PI / 180),
@@ -222,14 +218,6 @@ async function main() {
     const gui = new GUI()
     const materialGUI = gui.addFolder('Material')
     materialGUI.open()
-
-    window.overrideMaterial = null
-    let indices = { elevation: 0, 'tile colors': 1 }
-    let materials = [null, tileIndexColorMaterial]
-    materialGUI.add({ index: 0 }, 'index', indices).onChange((index) => {
-        window.overrideMaterial = materials[index]
-    })
-
     materialGUI.addColor(materialParams, 'color').onChange((color) => {
         elevationMaterial.setColor(color)
     })
@@ -338,7 +326,9 @@ async function main() {
             window.tilesNeedUpdate = false
         }
 
+        scene.overrideMaterial = depthColorMaterial
         tileRenderer.render(scene, tileCam)
+        scene.overrideMaterial = null
 
         group.visible = true
         if (reset) {
@@ -349,9 +339,7 @@ async function main() {
         orthoRenderer.render(scene, orthoCam)
 
         // regular render
-        scene.overrideMaterial = window.overrideMaterial
         renderer.render(scene, camera)
-        scene.overrideMaterial = null
 
         requestAnimationFrame(animate)
     }
