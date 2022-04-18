@@ -178,7 +178,7 @@ async function main() {
         Latitude: 27.9881,
         Longitude: 86.925,
     }
-    const zoom = 6
+    const zoom = 7
     const [x, y, z] = latLngToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
     const globeReference = new GlobeReference({ x, y, z, scale: 10 })
@@ -587,6 +587,10 @@ async function combineNode(
     globeReference,
     material
 ) {
+    // make sure that node exists, and that
+    // parent exists, because we don't want
+    // to remove the parent if it is the
+    // first tile
     let node = tileTree.getNodeByID(id)
     let parent = node && node.parent
     if (node && parent) {

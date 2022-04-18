@@ -187,7 +187,7 @@ export class XYZTileNode {
                 const urView = new THREE.Vector3(...urECEF).applyMatrix4(
                     homeMatrix
                 )
-                this.bbox = new THREE.LineSegments(
+                this.bbox = new THREE.Line(
                     new THREE.BufferGeometry().setFromPoints([
                         new THREE.Vector3(
                             Math.min(llView.x, urView.x),
@@ -195,13 +195,18 @@ export class XYZTileNode {
                             0
                         ),
                         new THREE.Vector3(
-                            Math.max(llView.x, urView.x),
-                            Math.min(llView.y, urView.y),
+                            Math.min(llView.x, urView.x),
+                            Math.max(llView.y, urView.y),
                             0
                         ),
                         new THREE.Vector3(
-                            Math.min(llView.x, urView.x),
+                            Math.max(llView.x, urView.x),
                             Math.max(llView.y, urView.y),
+                            0
+                        ),
+                        new THREE.Vector3(
+                            Math.max(llView.x, urView.x),
+                            Math.min(llView.y, urView.y),
                             0
                         ),
                         new THREE.Vector3(
