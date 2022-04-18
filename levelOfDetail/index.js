@@ -371,16 +371,19 @@ async function main() {
                 tileCam.height
             )
 
-            if (!window.pruneFirst && Object.keys(tileData.tooLow).length > 0) {
+            splitTiles(tileData)
+            pruneTiles(tileData)
+
+            /*if (!window.pruneFirst && Object.keys(tileData.tooLow).length > 0) {
                 splitTiles(tileData)
             } else {
                 pruneTiles(tileData)
-            }
+            }*/
         }
     }
 
     const splitTiles = async function (tileData) {
-        if (!window.busySplitting && !window.busyPruning) {
+        if (!window.busySplitting) {
             window.busySplitting = true
 
             const promises = []
@@ -412,7 +415,7 @@ async function main() {
     }
 
     const pruneTiles = async function (tileData) {
-        if (!window.busyPruning && !window.busySplitting) {
+        if (!window.busyPruning) {
             window.busyPruning = true
 
             const promises = []
