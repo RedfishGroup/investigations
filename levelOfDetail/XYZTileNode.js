@@ -45,9 +45,16 @@ export class XYZTileNode {
         this.threeMesh = null
         this._lastMArtiniError = null
         this._isBusy = false
-        this.id = XYZTileNode.#nodeCount
+        // Reuse node ids. Look for gap in the nodeIDLookup. This is needed becasue we cant go over 255*256, because of the shader. 
+        // Node removal will leave a gap in the node id lookup.
+        for(let i=0; i<255*256; i++) {
+            if(XYZTileNode.#nodeIDLookup[i] === undefined) {
+                this.id = i
+                XYZTileNode.#nodeIDLookup[i] = this
+                break
+            }
+        }
         XYZTileNode.#nodeCount = XYZTileNode.#nodeCount + 1
-        XYZTileNode.#nodeIDLookup[this.id] = this
     }
 
     getRoot() {
@@ -225,12 +232,12 @@ export class XYZTileNode {
                         new THREE.Vector3(
                             Math.min(llView.x, urView.x),
                             Math.min(llView.y, urView.y),
-                            0
+                            Math.floor(Math.min(llView.z-1, urView.z-1))
                         ),
                         new THREE.Vector3(
                             Math.max(llView.x, urView.x),
                             Math.max(llView.y, urView.y),
-                            1
+                            Math.ceil(Math.max(llView.z+1, urView.z+1))
                         )
                     ),
                     0xffffff

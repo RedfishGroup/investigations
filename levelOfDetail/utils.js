@@ -1,6 +1,5 @@
 import { LatLngBounds } from './LatLngBounds.js'
 import DataSet from 'https://code.agentscript.org/src/DataSet.js'
-window.DataSet = DataSet
 
 
 /**
