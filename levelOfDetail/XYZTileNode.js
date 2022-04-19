@@ -2,6 +2,7 @@ import {
     splitTileCoordinates,
     getTileBounds,
     padDataSetMaintainSlope,
+    padDataBottomAndRight
 } from './utils.js'
 import mapboxMartini from 'https://cdn.skypack.dev/@mapbox/martini'
 import { getAndDecodeTerrariumElevationTile } from './mapzenTiles.js'
@@ -110,13 +111,8 @@ export class XYZTileNode {
                 this.y,
                 this.z
             )
-            if (this.PAD_SIDES_TO_REMOVE_SEAMS) {
-                const elev255 = await elevation.resample(255, 255)
-                const elev257 = padDataSetMaintainSlope(elev255)
+                const elev257 = padDataBottomAndRight(elevation)
                 this.elevation = elev257
-            } else {
-                this.elevation = await elevation.resample(257, 257)
-            }
             this._isBusy = false
         }
         return this.elevation
@@ -129,11 +125,6 @@ export class XYZTileNode {
      */
     getBounds() {
         const bounds = getTileBounds(this.x, this.y, this.z)
-        if (this.PAD_SIDES_TO_REMOVE_SEAMS) {
-            // stretch the bounds to the edge of the tile. This is to minimize gaps in the mesh.
-            const bounds2 = bounds.getBoundsPadded(1 / 257)
-            return bounds2
-        }
         return bounds
     }
 

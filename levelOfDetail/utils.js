@@ -1,7 +1,6 @@
 import { LatLngBounds } from './LatLngBounds.js'
 import DataSet from 'https://code.agentscript.org/src/DataSet.js'
 
-
 /**
  *
  * @param {Image} image
@@ -53,19 +52,22 @@ export function splitTileCoordinates(x, y, z) {
     return tileCoords
 }
 
-
 /**
- * 
+ *
  * Pad a dataset on all sides, by a certain number of pixels, with the value of the closest point.
- * 
+ *
  * @param {DataSet} ds
- * @param {Number} pixels 
+ * @param {Number} pixels
  * @returns {DataSet}
  */
 export function padDataSet(ds, pixels = 1) {
-    const newWidth = ds.width + (2 * pixels)
-    const newHeight = ds.height + (2 * pixels)
-    const newData = new DataSet(newWidth, newHeight, new ds.data.constructor(newWidth * newHeight))
+    const newWidth = ds.width + 2 * pixels
+    const newHeight = ds.height + 2 * pixels
+    const newData = new DataSet(
+        newWidth,
+        newHeight,
+        new ds.data.constructor(newWidth * newHeight)
+    )
     for (let j = 0; j < newHeight; j++) {
         for (let i = 0; i < newWidth; i++) {
             const x = Math.min(ds.width - 1, Math.max(0, i - pixels))
@@ -77,11 +79,39 @@ export function padDataSet(ds, pixels = 1) {
     return newData
 }
 
+export function padDataBottomAndRight(ds) {
+    const newWidth = ds.width + 1
+    const newHeight = ds.height + 1
+    const newData = new DataSet(
+        newWidth,
+        newHeight,
+        new ds.data.constructor(newWidth * newHeight)
+    )
+    for (let j = 0; j < newHeight; j++) {
+        for (let i = 0; i < newWidth; i++) {
+            const x = Math.min(ds.width-1, Math.max(0, i ))
+            const y = Math.min(ds.height-1, Math.max(0, j ))
+            let v = ds.sample(x, y, false)
+            if (i >= ds.width) {
+                const u2 = ds.sample(ds.width - 2, y)
+                const u1 = ds.sample(ds.width - 1, y)
+                v = (u1 - u2) + u1
+            } else if (j >= ds.height) {
+                const u2 = ds.sample(x, ds.height - 2)
+                const u1 = ds.sample(x, ds.height - 1)
+                v = (u1 - u2) + u1
+            }
+            newData.setXY(i, j, v)
+        }
+    }
+    return newData
+}
+
 /**
  * Pad the dataset with 1 pixel while maintaining the slope at the borders.
- * 
- * @param {DataSet} ds0 
- * @returns 
+ *
+ * @param {DataSet} ds0
+ * @returns
  */
 export function padDataSetMaintainSlope(ds0) {
     const ds = padDataSet(ds0, 1)
