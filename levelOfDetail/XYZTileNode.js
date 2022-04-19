@@ -1,7 +1,6 @@
 import {
     splitTileCoordinates,
     getTileBounds,
-    padDataSetMaintainSlope,
     padDataBottomAndRight
 } from './utils.js'
 import mapboxMartini from 'https://cdn.skypack.dev/@mapbox/martini'
@@ -35,7 +34,6 @@ export class XYZTileNode {
      */
     constructor(x, y, z, parent) {
         this.MAX_ZOOM = 16 // The maximum zoom level for the tiles
-        this.PAD_SIDES_TO_REMOVE_SEAMS = false
 
         this.x = x
         this.y = y
