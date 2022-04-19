@@ -185,7 +185,6 @@ async function main() {
 
     let martiniParams = { error: 1 }
     let materialParams = {
-        side: THREE.BackSide,
         color: 0xffaa00,
         wireframe: false,
     }
@@ -198,15 +197,13 @@ async function main() {
     const tileIndexColorMaterial = new TileIndexColorMaterial(materialParams)
     const tileNeedsUpdateMaterial = new TileNeedsUpdateMaterial({
         fov: tileCam.vfov * (Math.PI / 180),
-        side: THREE.BackSide,
         scale: 1 / globeReference.getScale(),
         height,
         depthTexture: depthTarget.texture,
     })
     const ridgeLineMaterial = new RidgeLineShaderMaterial({
-        side: THREE.BackSide,
-        height,
         width,
+        height,
         depthTexture: depthTarget.texture,
     })
 

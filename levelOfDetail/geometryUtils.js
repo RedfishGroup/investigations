@@ -66,11 +66,11 @@ function verticesFromMartiniMesh(
             let mercX = mesh.vertices[i]
             let mercY = mesh.vertices[i + 1]
 
-            let elev = elevation.sample(mercX, dim - mercY - 1, false)
+            let elev = elevation.sample(mercX, mercY, false)
             elevations[i / 2] = elev
 
             let lon = (mercX / dim256) * (east - west) + west
-            let lat = (mercY / dim256) * (north - south) + south
+            let lat = (mercY / dim256) * (south - north) + north
 
             let [x, y, z] = lla_ecef(lat, lon, elev)
             let vec = new THREE.Vector3(x, y, z).applyMatrix4(matrix)

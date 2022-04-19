@@ -78,9 +78,9 @@ export function splitTileCoordinates(x, y, z) {
 }
 
 /**
- * Pad the bottom and right of the Dataset with 1 pixel, with a value that maintins the slope at the edges. 
- * @param {DataSet} ds 
- * @returns 
+ * Pad the bottom and right of the Dataset with 1 pixel, with a value that maintins the slope at the edges.
+ * @param {DataSet} ds
+ * @returns
  */
 export function padDataBottomAndRight(ds) {
     const newWidth = ds.width + 1
@@ -92,26 +92,24 @@ export function padDataBottomAndRight(ds) {
     )
     for (let j = 0; j < newHeight; j++) {
         for (let i = 0; i < newWidth; i++) {
-            const x = Math.min(ds.width-1, Math.max(0, i ))
-            const y = Math.min(ds.height-1, Math.max(0, j ))
+            const x = Math.min(ds.width - 1, Math.max(0, i))
+            const y = Math.min(ds.height - 1, Math.max(0, j))
             let v = ds.sample(x, y, false)
-            // maintain the slope along the edges. 
+            // maintain the slope along the edges.
             if (i >= ds.width) {
                 const u2 = ds.sample(ds.width - 2, y)
                 const u1 = ds.sample(ds.width - 1, y)
-                v = (u1 - u2) + u1
+                v = u1 - u2 + u1
             } else if (j >= ds.height) {
                 const u2 = ds.sample(x, ds.height - 2)
                 const u1 = ds.sample(x, ds.height - 1)
-                v = (u1 - u2) + u1
+                v = u1 - u2 + u1
             }
             newData.setXY(i, j, v)
         }
     }
     return newData
 }
-
-
 
 /**
  *
@@ -139,7 +137,6 @@ export function padDataBottomAndRight(ds) {
 //     }
 //     return newData
 // }
-
 
 /**
  * Pad the dataset with 1 pixel while maintaining the slope at the borders.

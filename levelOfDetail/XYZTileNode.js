@@ -1,7 +1,7 @@
 import {
     splitTileCoordinates,
     getTileBounds,
-    padDataBottomAndRight
+    padDataBottomAndRight,
 } from './utils.js'
 import mapboxMartini from 'https://cdn.skypack.dev/@mapbox/martini'
 import { getAndDecodeTerrariumElevationTile } from './mapzenTiles.js'
@@ -109,8 +109,8 @@ export class XYZTileNode {
                 this.y,
                 this.z
             )
-                const elev257 = padDataBottomAndRight(elevation)
-                this.elevation = elev257
+            const elev257 = padDataBottomAndRight(elevation)
+            this.elevation = elev257
             this._isBusy = false
         }
         return this.elevation
@@ -170,7 +170,7 @@ export class XYZTileNode {
                     this.id,
                     homeMatrix
                 )
-                geometry.computeBoundingBox()
+                //geometry.computeBoundingBox()
                 this.threeMesh = new THREE.Mesh(geometry, material)
                 //
                 // Bounding box for the mesh
@@ -221,12 +221,12 @@ export class XYZTileNode {
                         new THREE.Vector3(
                             Math.min(llView.x, urView.x),
                             Math.min(llView.y, urView.y),
-                            Math.floor(Math.min(llView.z-1, urView.z-1))
+                            Math.floor(Math.min(llView.z - 1, urView.z - 1))
                         ),
                         new THREE.Vector3(
                             Math.max(llView.x, urView.x),
                             Math.max(llView.y, urView.y),
-                            Math.ceil(Math.max(llView.z+1, urView.z+1))
+                            Math.ceil(Math.max(llView.z + 1, urView.z + 1))
                         )
                     ),
                     0xffffff
