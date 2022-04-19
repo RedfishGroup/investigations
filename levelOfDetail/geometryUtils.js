@@ -59,7 +59,8 @@ function verticesFromMartiniMesh(
         let elevations = new Float32Array(mesh.vertices.length / 2)
 
         // elevation tiles are always square
-        let dim = elevation.width
+        const dim = elevation.width
+        const dim256 = dim - 1
 
         for (let i = 0; i < mesh.vertices.length; i += 2) {
             let mercX = mesh.vertices[i]
@@ -68,9 +69,8 @@ function verticesFromMartiniMesh(
             let elev = elevation.sample(mercX, dim - mercY - 1, false)
             elevations[i / 2] = elev
 
-            const dim256 = dim-1
-            let lon = (mercX / (dim256)) * (east - west) + west
-            let lat = (mercY / (dim256)) * (north - south) + south
+            let lon = (mercX / dim256) * (east - west) + west
+            let lat = (mercY / dim256) * (north - south) + south
 
             let [x, y, z] = lla_ecef(lat, lon, elev)
             let vec = new THREE.Vector3(x, y, z).applyMatrix4(matrix)

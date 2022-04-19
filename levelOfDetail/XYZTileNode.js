@@ -44,10 +44,10 @@ export class XYZTileNode {
         this.threeMesh = null
         this._lastMArtiniError = null
         this._isBusy = false
-        // Reuse node ids. Look for gap in the nodeIDLookup. This is needed becasue we cant go over 255*256, because of the shader. 
+        // Reuse node ids. Look for gap in the nodeIDLookup. This is needed becasue we cant go over 255*256, because of the shader.
         // Node removal will leave a gap in the node id lookup.
-        for(let i=0; i<255*256; i++) {
-            if(XYZTileNode.#nodeIDLookup[i] === undefined) {
+        for (let i = 0; i < 255 * 256; i++) {
+            if (XYZTileNode.#nodeIDLookup[i] === undefined) {
                 this.id = i
                 XYZTileNode.#nodeIDLookup[i] = this
                 break
@@ -174,9 +174,9 @@ export class XYZTileNode {
                 this.threeMesh = new THREE.Mesh(geometry, material)
                 //
                 // Bounding box for the mesh
-                const bounds2 = bounds.getBoundsPadded(-1 / 256)
-                const llECEF = lla_ecef(bounds2.south, bounds2.west, 0)
-                const urECEF = lla_ecef(bounds2.north, bounds2.east, 0)
+                //const bounds2 = bounds.getBoundsPadded(-1 / 256)
+                const llECEF = lla_ecef(bounds.south, bounds.west, 0)
+                const urECEF = lla_ecef(bounds.north, bounds.east, 0)
                 const llView = new THREE.Vector3(...llECEF).applyMatrix4(
                     homeMatrix
                 )

@@ -15,15 +15,7 @@ export function imageToImageData(image) {
     return context.getImageData(0, 0, image.width, image.height)
 }
 
-/**
- * Lat long to tile coordinates
- * @param {*} lat
- * @param {*} lng
- * @param {*} z
- * @returns
- */
-/* prettier-ignore */
-export function latLngToSlippyXYZ(lat, lng, z) {
+/*export function latLngToSlippyXYZ(lat, lng, z) {
     const x = Math.floor((lng + 180) / 360 * Math.pow(2, z))
     const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z))
     return [x, y, z]
@@ -34,12 +26,45 @@ export function slippyXYZToLatLng(x, y, z) {
     const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z)
     const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)))
     return [lat, lng]
+}*/
+
+function lon2tile(lon, zoom) {
+    return Math.floor(((lon + 180) / 360) * Math.pow(2, zoom))
+}
+function lat2tile(lat, zoom) {
+    return Math.floor(
+        ((1 -
+            Math.log(
+                Math.tan((lat * Math.PI) / 180) +
+                    1 / Math.cos((lat * Math.PI) / 180)
+            ) /
+                Math.PI) /
+            2) *
+            Math.pow(2, zoom)
+    )
+}
+
+function tile2Lon(x, z) {
+    return (x / Math.pow(2, z)) * 360 - 180
+}
+
+function tile2Lat(y, z) {
+    var n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z)
+    return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)))
+}
+
+export function latLonToSlippyXYZ(lat, lon, z) {
+    return [lon2tile(lon, z), lat2tile(lat, z), z]
+}
+
+export function slippyXYZToLatLon(x, y, z) {
+    return [tile2Lat(y, z), tile2Lon(x, z)]
 }
 
 export function getTileBounds(x, y, z) {
-    const [lat1, lng1] = slippyXYZToLatLng(x, y, z)
-    const [lat2, lng2] = slippyXYZToLatLng(x + 1, y + 1, z)
-    return new LatLngBounds(lat1, lng1, lat2, lng2)
+    const [lat1, lon1] = slippyXYZToLatLon(x, y, z)
+    const [lat2, lon2] = slippyXYZToLatLon(x + 1, y + 1, z)
+    return new LatLngBounds(lat1, lon1, lat2, lon2)
 }
 
 export function splitTileCoordinates(x, y, z) {
