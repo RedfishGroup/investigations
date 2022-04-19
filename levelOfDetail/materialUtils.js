@@ -483,6 +483,28 @@ export class RidgeLineShaderMaterial extends THREE.ShaderMaterial {
 
             // depth packing and unpacking functions
             ${packNumberToRGBA}
+
+            const float scale = 30.;
+            const vec3 colors[6] = vec3[6](
+                vec3(1., 0., 0.), vec3(1., 0.5, 0.), vec3(1., 1., 0.),
+                vec3(0., 1., 0.5), vec3(0., 0.5, 1.), vec3(0.5, 0., 1.)
+            );
+
+            vec3 getColor(const in float tileIndex) {
+                int length = colors.length();
+                float p = float(length) * (mod(tileIndex, scale) / scale);
+
+                int indexStart = int(floor(p));
+                int indexEnd = indexStart + 1;
+                if(indexEnd >= length) {
+                    indexEnd = 0;
+                }
+
+                float percent = (p) - floor(p);
+
+                return mix(colors[indexStart], colors[indexEnd], percent);
+            }
+
          
             void main() {
                 mat4 clampTex = mat4(0.5,0.0,0.0,0.0,
@@ -507,7 +529,7 @@ export class RidgeLineShaderMaterial extends THREE.ShaderMaterial {
                 float centerDepth2 = unpackRGBAToNumber(texture2DProj(depthTexture, clampedCoords)) * k;
 
                 float foo =  abs(upDepth + downDepth + leftDepth + rightDepth - 4.0 * centerDepth);
-                vec3 color = 20.0*foo*vec3(1.0, 1.0, 1.0) + (1.0 - (centerDepth/2.0)) * vec3(0.2, 0.8, 0.2);
+                vec3 color = 20.0*foo*vec3(1.0, 1.0, 1.0) + 0.6*getColor(centerDepth2);
                 gl_FragColor = vec4(color, 1.0);
             }
         `
