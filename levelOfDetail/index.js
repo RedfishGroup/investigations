@@ -18,6 +18,7 @@ import {
     ElevationShaderMaterial,
     TileNeedsUpdateMaterial,
     DepthColorShaderMaterial,
+    RidgeLineShaderMaterial,
 } from './materialUtils.js'
 
 import { latLonToSlippyXYZ } from './utils.js'
@@ -202,6 +203,12 @@ async function main() {
         height,
         depthTexture: depthTarget.texture,
     })
+    const ridgeLineMaterial = new RidgeLineShaderMaterial({
+        side: THREE.BackSide,
+        height,
+        width,
+        depthTexture: depthTarget.texture,
+    })
 
     const tileTree = new XYZTileNode(x, y, z, null)
     const threeMesh = await tileTree.getThreeMesh(
@@ -325,7 +332,7 @@ async function main() {
             window.tilesNeedUpdate = false
         }
 
-        scene.overrideMaterial = depthColorMaterial
+        scene.overrideMaterial = ridgeLineMaterial
         tileRenderer.render(scene, tileCam)
         scene.overrideMaterial = null
 

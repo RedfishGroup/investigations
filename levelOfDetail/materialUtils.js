@@ -441,6 +441,88 @@ export class DepthColorShaderMaterial extends THREE.ShaderMaterial {
     }
 }
 
+export class RidgeLineShaderMaterial extends THREE.ShaderMaterial {
+    constructor(options) {
+        const side = options.side || THREE.FrontSide
+        const wireframe = false
+        const transparent = false
+
+        const uniforms = {
+            depthTexture: new THREE.Uniform(
+                options.depthTexture || new THREE.Texture()
+            ),
+            height: { value: options.height || 1 },
+            width: { value: options.width || 1 },
+        }
+
+        const vertexShader = `
+            precision highp float;
+
+            varying vec4 vScreenCoords;
+            varying mat4 vProjectionMatrix;
+
+            void main() {
+                vec4 screenCoords = projectionMatrix * modelViewMatrix * vec4(position, 1.);
+
+                vScreenCoords = screenCoords;
+                vProjectionMatrix = projectionMatrix;
+
+                gl_Position = screenCoords;
+            }
+        `
+
+        const fragmentShader = `
+            precision highp float;
+
+            uniform float height;
+            uniform float width;
+            uniform sampler2D depthTexture;
+
+            varying vec4 vScreenCoords;
+            varying mat4 vProjectionMatrix;
+
+            // depth packing and unpacking functions
+            ${packNumberToRGBA}
+         
+            void main() {
+                mat4 clampTex = mat4(0.5,0.0,0.0,0.0,
+                                     0.0,0.5,0.0,0.0,
+                                     0.0,0.0,0.5,0.0,
+                                     0.5,0.5,0.5,1.0);
+                vec4 uv = vScreenCoords;
+                vec4 clampedCoords = clampTex * vScreenCoords;
+
+                vec4 up = clampTex * vec4(uv.x, uv.y+ 0.5 / height, uv.z, uv.w);
+                vec4 down = clampTex * vec4(uv.x, uv.y- 0.5 / height, uv.z, uv.w);
+                vec4 left = clampTex * vec4(uv.x-0.5 / width, uv.y, uv.z, uv.w);
+                vec4 right = clampTex * vec4(uv.x+0.5 / width, uv.y, uv.z, uv.w);
+
+                float k = ${inverseDepthScalarString};
+
+                float upDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, up)) * k);
+                float downDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, down)) * k);
+                float leftDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, left)) * k);
+                float rightDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, right)) * k);
+                float centerDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, clampedCoords)) * k);
+                float centerDepth2 = unpackRGBAToNumber(texture2DProj(depthTexture, clampedCoords)) * k;
+
+                float foo =  abs(upDepth + downDepth + leftDepth + rightDepth - 4.0 * centerDepth);
+                vec3 color = 20.0*foo*vec3(1.0, 1.0, 1.0) + (1.0 - (centerDepth/2.0)) * vec3(0.2, 0.8, 0.2);
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `
+
+        super({
+            side,
+            uniforms,
+            wireframe,
+            transparent,
+            vertexShader,
+            fragmentShader,
+        })
+    }
+}
+
 /**
  * Unpacks a value at pixel that has been RGBA encoded
  *
