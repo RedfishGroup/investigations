@@ -505,31 +505,70 @@ export class RidgeLineShaderMaterial extends THREE.ShaderMaterial {
                 return mix(colors[indexStart], colors[indexEnd], percent);
             }
 
-         
-            void main() {
-                mat4 clampTex = mat4(0.5,0.0,0.0,0.0,
-                                     0.0,0.5,0.0,0.0,
-                                     0.0,0.0,0.5,0.0,
-                                     0.5,0.5,0.5,1.0);
-                vec4 uv = vScreenCoords;
-                vec4 clampedCoords = clampTex * vScreenCoords;
+            mat4 clampTex = mat4(0.5,0.0,0.0,0.0,
+                0.0,0.5,0.0,0.0,
+                0.0,0.0,0.5,0.0,
+                0.5,0.5,0.5,1.0);
 
-                vec4 up = clampTex * vec4(uv.x, uv.y+ 0.5 / height, uv.z, uv.w);
-                vec4 down = clampTex * vec4(uv.x, uv.y- 0.5 / height, uv.z, uv.w);
-                vec4 left = clampTex * vec4(uv.x-0.5 / width, uv.y, uv.z, uv.w);
-                vec4 right = clampTex * vec4(uv.x+0.5 / width, uv.y, uv.z, uv.w);
-
+            float laplaceFilter(const in vec4 uv, const in float width, const in float height) {
                 float k = ${inverseDepthScalarString};
+
+                float pix = 1.0; 
+
+                vec4 up = clampTex * vec4(uv.x, uv.y +  pix / height, uv.zw);
+                vec4 down = clampTex * vec4(uv.x, uv.y -  pix / height, uv.zw);
+                vec4 left = clampTex * vec4(uv.x - pix / width, uv.y, uv.zw);
+                vec4 right = clampTex * vec4(uv.x + pix / width, uv.y, uv.zw);
+                vec4 center = clampTex * vec4(uv.x, uv.y, uv.zw);
 
                 float upDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, up)) * k);
                 float downDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, down)) * k);
                 float leftDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, left)) * k);
                 float rightDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, right)) * k);
-                float centerDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, clampedCoords)) * k);
-                float centerDepth2 = unpackRGBAToNumber(texture2DProj(depthTexture, clampedCoords)) * k;
+                float centerDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, center)) * k);
 
-                float foo =  abs(upDepth + downDepth + leftDepth + rightDepth - 4.0 * centerDepth);
-                vec3 color = 20.0*foo*vec3(1.0, 1.0, 1.0) + 0.6*getColor(centerDepth2);
+                float result = abs(upDepth + downDepth + leftDepth + rightDepth - 4.0 * centerDepth);
+                return result;
+            }
+         
+            float sobelFilter(const in vec4 uv, const in float width, const in float height) {
+                float k = ${inverseDepthScalarString};
+                float pix = 1.0; 
+
+                vec4 up = clampTex * vec4(uv.x, uv.y + pix / height, uv.zw);
+                vec4 down = clampTex * vec4(uv.x, uv.y - pix / height, uv.zw);
+                vec4 left = clampTex * vec4(uv.x - pix / width, uv.y, uv.zw);
+                vec4 right = clampTex * vec4(uv.x + pix / width, uv.y, uv.zw);
+                vec4 ul = clampTex * vec4(uv.x - pix / width, uv.y + pix / height, uv.zw);
+                vec4 ur = clampTex * vec4(uv.x + pix / width, uv.y + pix / height, uv.zw);
+                vec4 dl = clampTex * vec4(uv.x - pix / width, uv.y - pix / height, uv.zw);
+                vec4 dr = clampTex * vec4(uv.x + pix / width, uv.y - pix / height, uv.zw);
+                vec4 center = clampTex * vec4(uv.x, uv.y, uv.zw);
+
+                float upDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, up)) * k);
+                float downDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, down)) * k);
+                float leftDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, left)) * k);
+                float rightDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, right)) * k);
+                float ulDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, ul)) * k);
+                float urDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, ur)) * k);
+                float dlDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, dl)) * k);
+                float drDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, dr)) * k);
+                float centerDepth = log(unpackRGBAToNumber(texture2DProj(depthTexture, center)) * k);
+
+                float sobelX = abs(upDepth + 2.0 * centerDepth + downDepth - ulDepth - 2.0 * leftDepth - dlDepth);
+                float sobelY = abs(ulDepth + 2.0 * centerDepth + urDepth -leftDepth - 2.0 * downDepth - drDepth);
+
+                float sobelMagnitude = sqrt(sobelX * sobelX + sobelY * sobelY);
+
+                return sobelMagnitude;
+            }
+
+            void main() {
+                vec4 center = clampTex * vScreenCoords;
+                float centerDepth2 = unpackRGBAToNumber(texture2DProj(depthTexture, center)) * ${inverseDepthScalarString};
+
+                float foo = sobelFilter(vScreenCoords, width, height);
+                vec3 color = 5.0*foo*vec3(1.0, 1.0, 1.0) + 0.4*getColor(centerDepth2);
                 gl_FragColor = vec4(color, 1.0);
             }
         `
