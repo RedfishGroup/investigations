@@ -39,6 +39,7 @@ export class LatLngBounds {
     get ur() {
         return new LatLng(this.north, this.east)
     }
+
     getBoundsPadded(paddingRatio) {
         const paddingLat = (this.north - this.south) * paddingRatio
         const paddingLng = (this.east - this.west) * paddingRatio
@@ -46,6 +47,50 @@ export class LatLngBounds {
             this.south - paddingLat,
             this.west - paddingLng,
             this.north + paddingLat,
+            this.east + paddingLng
+        )
+    }
+
+    getSouthAndWestPadded(paddingRatio) {
+        const paddingLat = (this.north - this.south) * paddingRatio
+        const paddingLng = (this.east - this.west) * paddingRatio
+        return new LatLngBounds(
+            this.south - paddingLat,
+            this.west - paddingLng,
+            this.north,
+            this.east
+        )
+    }
+
+    getNorthAndWestPadded(paddingRatio) {
+        const paddingLat = (this.north - this.south) * paddingRatio
+        const paddingLng = (this.east - this.west) * paddingRatio
+        return new LatLngBounds(
+            this.south,
+            this.west - paddingLng,
+            this.north + paddingLat,
+            this.east
+        )
+    }
+
+    getNorthAndEastPadded(paddingRatio) {
+        const paddingLat = (this.north - this.south) * paddingRatio
+        const paddingLng = (this.east - this.west) * paddingRatio
+        return new LatLngBounds(
+            this.south,
+            this.west,
+            this.north + paddingLat,
+            this.east + paddingLng
+        )
+    }
+
+    getSouthAndEastPadded(paddingRatio) {
+        const paddingLat = (this.north - this.south) * paddingRatio
+        const paddingLng = (this.east - this.west) * paddingRatio
+        return new LatLngBounds(
+            this.south - paddingLat,
+            this.west,
+            this.north,
             this.east + paddingLng
         )
     }
