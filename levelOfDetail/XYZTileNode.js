@@ -5,7 +5,11 @@ import {
 } from './utils.js'
 import mapboxMartini from 'https://cdn.skypack.dev/@mapbox/martini'
 import { getAndDecodeTerrariumElevationTile } from './mapzenTiles.js'
-import { updateGeometry, geometryFromMartiniMesh } from './geometryUtils.js'
+import {
+    updateGeometry,
+    makeSkirtGeometry,
+    geometryFromMartiniMesh,
+} from './geometryUtils.js'
 import * as THREE from 'three'
 import { lla_ecef } from './ECEF.js'
 
@@ -122,7 +126,7 @@ export class XYZTileNode {
      * @returns {LatLngBounds}
      */
     getBounds() {
-        const bounds = getTileBounds(this.x, this.y, this.z)
+        const bounds = getTileBounds(this.x, this.y, this.z) //.getSouthAndEastPadded(1 / 256)
         return bounds
     }
 
@@ -131,14 +135,17 @@ export class XYZTileNode {
      * @param {Number} martiniError
      * @returns
      */
-    async getMartiniMesh(martiniError) {
-        this._isBusy = true
-        const rtin = new mapboxMartini(257)
-        const elev = await this.getElevation()
-        const tile = rtin.createTile(elev.data)
-        const mesh = tile.getMesh(martiniError || 0.1)
-        this._isBusy = false
-        return mesh
+    async getMartiniMesh(martiniError = 0.1) {
+        if (this.needsUpdate()) {
+            this._isBusy = true
+            const rtin = new mapboxMartini(257)
+            const elev = await this.getElevation()
+            this.tile = rtin.createTile(elev.data)
+            this.martiniMesh = this.tile.getMesh(martiniError)
+            this._isBusy = false
+        }
+
+        return this.martiniMesh
     }
 
     /**
@@ -156,25 +163,24 @@ export class XYZTileNode {
                 updateGeometry(
                     this.threeMesh.geometry,
                     await this.getMartiniMesh(martiniError),
-                    this.elevation,
+                    await this.getElevation(),
                     this.getBounds(),
                     homeMatrix
                 )
             } else {
                 const bounds = this.getBounds()
-                const marty = await this.getMartiniMesh(martiniError)
-                let geometry = geometryFromMartiniMesh(
-                    marty,
-                    this.elevation,
-                    bounds,
-                    this.id,
-                    homeMatrix
+                this.threeMesh = new THREE.Mesh(
+                    geometryFromMartiniMesh(
+                        await this.getMartiniMesh(martiniError),
+                        await this.getElevation(),
+                        bounds,
+                        this.id,
+                        homeMatrix
+                    ),
+                    material
                 )
-                //geometry.computeBoundingBox()
-                this.threeMesh = new THREE.Mesh(geometry, material)
-                //
+
                 // Bounding box for the mesh
-                //const bounds2 = bounds.getBoundsPadded(-1 / 256)
                 const llECEF = lla_ecef(bounds.south, bounds.west, 0)
                 const urECEF = lla_ecef(bounds.north, bounds.east, 0)
                 const llView = new THREE.Vector3(...llECEF).applyMatrix4(
@@ -185,31 +191,11 @@ export class XYZTileNode {
                 )
                 this.bbox = new THREE.Line(
                     new THREE.BufferGeometry().setFromPoints([
-                        new THREE.Vector3(
-                            Math.min(llView.x, urView.x),
-                            Math.min(llView.y, urView.y),
-                            0
-                        ),
-                        new THREE.Vector3(
-                            Math.min(llView.x, urView.x),
-                            Math.max(llView.y, urView.y),
-                            0
-                        ),
-                        new THREE.Vector3(
-                            Math.max(llView.x, urView.x),
-                            Math.max(llView.y, urView.y),
-                            0
-                        ),
-                        new THREE.Vector3(
-                            Math.max(llView.x, urView.x),
-                            Math.min(llView.y, urView.y),
-                            0
-                        ),
-                        new THREE.Vector3(
-                            Math.min(llView.x, urView.x),
-                            Math.min(llView.y, urView.y),
-                            0
-                        ),
+                        new THREE.Vector3(llView.x, llView.y, 0),
+                        new THREE.Vector3(urView.x, llView.y, 0),
+                        new THREE.Vector3(urView.x, urView.y, 0),
+                        new THREE.Vector3(llView.x, urView.y, 0),
+                        new THREE.Vector3(llView.x, llView.y, 0),
                     ]),
                     new THREE.LineBasicMaterial({ color: 0xffffff })
                 )
@@ -235,6 +221,18 @@ export class XYZTileNode {
             this._isBusy = false
         }
         return this.threeMesh
+    }
+
+    async getSkirtMesh(homeMatrix, material) {
+        this.skirtMesh = new THREE.Mesh(
+            makeSkirtGeometry(
+                await this.getElevation(),
+                this.getBounds(),
+                homeMatrix
+            ),
+            material
+        )
+        return this.skirtMesh
     }
 
     /**

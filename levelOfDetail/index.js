@@ -183,16 +183,17 @@ async function main() {
 
     const globeReference = new GlobeReference({ x, y, z, scale: 10 })
 
-    let martiniParams = { error: 1 }
+    let martiniParams = { error: 0 }
     let materialParams = {
         color: 0xffaa00,
         wireframe: false,
     }
     let cameraParams = { angle: 0 }
 
-    const elevationMaterial = new ElevationShaderMaterial(materialParams)
+    const basicMaterial = new THREE.MeshBasicMaterial(materialParams)
     const depthMaterial = new DepthShaderMaterial(materialParams)
     const tileIndexMaterial = new TilePickingMaterial(materialParams)
+    const elevationMaterial = new ElevationShaderMaterial(materialParams)
     const depthColorMaterial = new DepthColorShaderMaterial(materialParams)
     const tileIndexColorMaterial = new TileIndexColorMaterial(materialParams)
     const tileNeedsUpdateMaterial = new TileNeedsUpdateMaterial({
@@ -216,6 +217,12 @@ async function main() {
     elevationMaterial.setMin(threeMesh.geometry.attributes.elevation.min)
     elevationMaterial.setMax(threeMesh.geometry.attributes.elevation.max)
     terrainGroup.add(threeMesh)
+
+    const skirtMesh = await tileTree.getSkirtMesh(
+        globeReference.getMatrix(),
+        basicMaterial
+    )
+    terrainGroup.add(skirtMesh)
 
     // dat.gui menu setup
     const gui = new GUI()
@@ -245,7 +252,8 @@ async function main() {
                         bboxGroup,
                         martiniParams.error,
                         globeReference,
-                        elevationMaterial
+                        elevationMaterial,
+                        basicMaterial
                     )
                     console.log('done', tileTree, tileTree.toString())
                 },
@@ -263,7 +271,8 @@ async function main() {
                         bboxGroup,
                         martiniParams.error,
                         globeReference,
-                        elevationMaterial
+                        elevationMaterial,
+                        basicMaterial
                     )
                     console.log('done', tileTree, tileTree.toString())
                 },
@@ -382,7 +391,8 @@ async function main() {
                             bboxGroup,
                             martiniParams.error,
                             globeReference,
-                            elevationMaterial
+                            elevationMaterial,
+                            basicMaterial
                         ).then(() => {
                             window.tilesNeedUpdate = true
                         })
@@ -430,7 +440,8 @@ async function main() {
                             bboxGroup,
                             martiniParams.error,
                             globeReference,
-                            elevationMaterial
+                            elevationMaterial,
+                            basicMaterial
                         ).then(() => {
                             window.tilesNeedUpdate = true
                         })
@@ -507,7 +518,8 @@ async function splitAllTiles(
     bboxGroup,
     error,
     globeReference,
-    material
+    material,
+    skirtMaterial
 ) {
     return Promise.all(
         tileTree.getLeafNodes().map((node) => {
@@ -517,7 +529,8 @@ async function splitAllTiles(
                 bboxGroup,
                 error,
                 globeReference,
-                material
+                material,
+                skirtMaterial
             )
         })
     ).then(() => {
@@ -531,18 +544,22 @@ async function splitNode(
     bboxGroup,
     error,
     globeReference,
-    material
+    material,
+    skirtMaterial
 ) {
     node.split()
     const promises = node.getChildren().map(async (child) => {
         await child.getThreeMesh(error, globeReference.getMatrix(), material)
+        await child.getSkirtMesh(globeReference.getMatrix(), skirtMaterial)
         return child
     })
     return Promise.all(promises).then((results) => {
         terrainGroup.remove(node.threeMesh)
+        terrainGroup.remove(node.skirtMesh)
         bboxGroup.remove(node.bbox)
         for (let i in results) {
             terrainGroup.add(results[i].threeMesh)
+            terrainGroup.add(results[i].skirtMesh)
             bboxGroup.add(results[i].bbox)
         }
     })
@@ -554,7 +571,8 @@ async function combineAllTiles(
     bboxGroup,
     error,
     globeReference,
-    material
+    material,
+    skirtMaterial
 ) {
     let parents = []
     tileTree.getLeafNodes().map((node) => {
@@ -564,6 +582,7 @@ async function combineAllTiles(
     })
     const promises = parents.map(async (parent) => {
         await parent.getThreeMesh(error, globeReference.getMatrix(), material)
+        await parent.getSkirtMesh(globeReference.getMatrix(), skirtMaterial)
         return parent
     })
     Promise.all(promises).then((parents) => {
@@ -571,10 +590,12 @@ async function combineAllTiles(
             let children = parents[i].getChildren()
             for (let j in children) {
                 terrainGroup.remove(children[j].threeMesh)
+                terrainGroup.remove(children[j].skirtMesh)
                 bboxGroup.remove(children[j].bbox)
                 tileTree.removeNode(children[j])
             }
             terrainGroup.add(parents[i].threeMesh)
+            terrainGroup.add(parent[i].skirtMesh)
             bboxGroup.add(parents[i].bbox)
         }
         window.tilesNeedUpdate = true
@@ -588,7 +609,8 @@ async function combineNode(
     bboxGroup,
     error,
     globeReference,
-    material
+    material,
+    skirtMaterial
 ) {
     // make sure that node exists, and that
     // parent exists, because we don't want
@@ -598,15 +620,18 @@ async function combineNode(
     let parent = node && node.parent
     if (node && parent) {
         await parent.getThreeMesh(error, globeReference.getMatrix(), material)
+        await parent.getSkirtMesh(globeReference.getMatrix(), skirtMaterial)
 
         let siblings = node.getSiblings()
         for (let i in siblings) {
             terrainGroup.remove(siblings[i].threeMesh)
+            terrainGroup.remove(siblings[i].skirtMesh)
             bboxGroup.remove(siblings[i].bbox)
             tileTree.removeNode(siblings[i])
         }
 
         terrainGroup.add(parent.threeMesh)
+        terrainGroup.add(parent.skirtMesh)
         bboxGroup.add(parent.bbox)
     }
 }
