@@ -229,9 +229,12 @@ async function main() {
     const materialGUI = gui.addFolder('Material')
     materialGUI.open()
     materialGUI.addColor(materialParams, 'color').onChange((color) => {
+        basicMaterial.color = new THREE.Color(color)
+        basicMaterial.needsUpdate = true
         elevationMaterial.setColor(color)
     })
     materialGUI.add(materialParams, 'wireframe').onChange((bool) => {
+        basicMaterial.wireframe = bool
         elevationMaterial.wireframe = bool
     })
     materialGUI.add(bboxGroup, 'visible').name('bounding boxes')
