@@ -231,6 +231,7 @@ export class XYZTileNode {
     }
 
     async getSkirtMesh(homeMatrix, material) {
+        this._isBusy = true
         this.skirtMesh = new THREE.Mesh(
             makeSkirtGeometry(
                 await this.getElevation(),
@@ -240,6 +241,7 @@ export class XYZTileNode {
             ),
             material
         )
+        this._isBusy = false
         return this.skirtMesh
     }
 
