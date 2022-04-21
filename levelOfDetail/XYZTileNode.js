@@ -27,7 +27,7 @@ import { lla_ecef } from './ECEF.js'
 
 export class XYZTileNode {
     static #nodeIDLookup = {} // aparently, the hash symbol makes it a private varaible.
-    static #nodeCount = 0
+    static #nodeCount = 1
 
     /**
      *
@@ -50,7 +50,7 @@ export class XYZTileNode {
         this._isBusy = false
         // Reuse node ids. Look for gap in the nodeIDLookup. This is needed becasue we cant go over 255*256, because of the shader.
         // Node removal will leave a gap in the node id lookup.
-        for (let i = 0; i < 255 * 256; i++) {
+        for (let i = 1; i < 255 * 256; i++) {
             if (XYZTileNode.#nodeIDLookup[i] === undefined) {
                 this.id = i
                 XYZTileNode.#nodeIDLookup[i] = this
