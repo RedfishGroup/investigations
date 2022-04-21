@@ -121,6 +121,7 @@ export function makeSkirtGeometry(elevation, bounds, tileIndex, matrix) {
 
     let indices = []
     let vertices = []
+    let elevations = []
 
     let index = 0
 
@@ -130,6 +131,8 @@ export function makeSkirtGeometry(elevation, bounds, tileIndex, matrix) {
             let mercX = i
             let mercY = j
             let elev = elevation.sample(mercX, mercY, false)
+
+            elevations.push(elev, 0)
 
             let lon = (mercX / dim256) * (east - west) + west
             let lat = (mercY / dim256) * (south - north) + north
@@ -175,6 +178,8 @@ export function makeSkirtGeometry(elevation, bounds, tileIndex, matrix) {
             let mercY = i
             let elev = elevation.sample(mercX, mercY, false)
 
+            elevations.push(elev, 0)
+
             let lon = (mercX / dim256) * (east - west) + west
             let lat = (mercY / dim256) * (south - north) + north
 
@@ -217,6 +222,10 @@ export function makeSkirtGeometry(elevation, bounds, tileIndex, matrix) {
     geometry.setAttribute(
         'position',
         new THREE.BufferAttribute(Float32Array.from(vertices), 3)
+    )
+    geometry.setAttribute(
+        'elevation',
+        new THREE.BufferAttribute(Float32Array.from(elevations), 1)
     )
     geometry.setAttribute(
         'tileIndex',

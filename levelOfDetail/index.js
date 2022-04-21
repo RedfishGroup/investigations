@@ -220,7 +220,7 @@ async function main() {
 
     const skirtMesh = await tileTree.getSkirtMesh(
         globeReference.getMatrix(),
-        basicMaterial
+        elevationMaterial
     )
     terrainGroup.add(skirtMesh)
 
@@ -256,7 +256,7 @@ async function main() {
                         martiniParams.error,
                         globeReference,
                         elevationMaterial,
-                        basicMaterial
+                        elevationMaterial
                     )
                     console.log('done', tileTree, tileTree.toString())
                 },
@@ -275,7 +275,7 @@ async function main() {
                         martiniParams.error,
                         globeReference,
                         elevationMaterial,
-                        basicMaterial
+                        elevationMaterial
                     )
                     console.log('done', tileTree, tileTree.toString())
                 },
@@ -395,7 +395,7 @@ async function main() {
                             martiniParams.error,
                             globeReference,
                             elevationMaterial,
-                            basicMaterial
+                            elevationMaterial
                         ).then(() => {
                             window.tilesNeedUpdate = true
                         })
@@ -444,7 +444,7 @@ async function main() {
                             martiniParams.error,
                             globeReference,
                             elevationMaterial,
-                            basicMaterial
+                            elevationMaterial
                         ).then(() => {
                             window.tilesNeedUpdate = true
                         })
