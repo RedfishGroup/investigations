@@ -26,8 +26,6 @@ export class CalibratedCamera extends THREE.Camera {
             far: this.far,
         }
 
-        this.fov = 2 * Math.atan(this.width / 2 / this.fx) * (180 / Math.PI)
-
         this.isCalibratedCamera = true
         this.isPerspectiveCamera = true
         this.screenToCameraMatrix = new THREE.Matrix4()

@@ -86,7 +86,7 @@ async function main() {
 
     // tiling camera setup
     const tileCam = new CalibratedCamera({ width, height })
-    //tileCam.position.set(-0.5, -0.5, 0.285)
+    window.tileCam = tileCam
     tileCam.position.set(5, -5, 0.5)
     tileCam.up.set(0, 0, 1)
     tileCam.updateMatrix()
@@ -142,9 +142,7 @@ async function main() {
 
     // camera viewing frustum
     const frustum = new Frustum({ far: 10, color: 0xff0000, camera: tileCam })
-    //frustum.renderOrder = 1000
-    //frustum.material.depthTest = false
-    //frustum.material.depthWrite = false
+    window.frustum = frustum
     frustum.updatePosition()
 
     group.add(frustum)
@@ -157,12 +155,6 @@ async function main() {
         0.3,
         0.2
     )
-    // lookVector.children[0].renderOrder = 1000
-    // lookVector.children[1].renderOrder = 1000
-    // lookVector.children[0].material.depthTest = false
-    // lookVector.children[1].material.depthTest = false
-    // lookVector.children[0].material.depthWrite = false
-    // lookVector.children[1].material.depthWrite = false
 
     group.add(lookVector)
 
@@ -189,7 +181,7 @@ async function main() {
         color: 0xffaa00,
         wireframe: false,
     }
-    let cameraParams = { angle: 0 }
+    let cameraParams = { fov: tileCam.vfov, angle: 0 }
 
     const depthMaterial = new DepthShaderMaterial(materialParams)
     const tileIndexMaterial = new TilePickingMaterial(materialParams)
@@ -279,7 +271,9 @@ async function main() {
         .name('combine all tiles')
     const camGUI = gui.addFolder('Camera')
     camGUI.open()
-    camGUI.add(cameraParams, 'angle', 0, 2 * Math.PI).onChange((angle) => {
+    const camPosGUI = camGUI.addFolder('Position')
+    camPosGUI.open()
+    camPosGUI.add(cameraParams, 'angle', 0, 2 * Math.PI).onChange((angle) => {
         let lookVec = new THREE.Vector3(0, 1, -0.1).applyAxisAngle(
             new THREE.Vector3(0, 0, 1),
             angle
@@ -291,6 +285,21 @@ async function main() {
         tileCam.updateProjectionMatrix()
         frustum.updatePosition()
         lookVector.setDirection(lookVec)
+
+        window.tilesNeedUpdate = true
+    })
+    const camIntGUI = camGUI.addFolder('Intrinsics')
+    camIntGUI.open()
+    camIntGUI.add(cameraParams, 'fov', 5, 100).onChange((fov) => {
+        let f = tileCam.height / (2 * Math.tan((fov / 2) * (Math.PI / 180)))
+        tileCam.fx = f
+        tileCam.fy = f
+        tileCam.updateMatrix()
+        tileCam.updateProjectionMatrix()
+
+        frustum.updateGeometry()
+
+        tileNeedsUpdateMaterial.setFov(tileCam.vfov * (Math.PI / 180))
 
         window.tilesNeedUpdate = true
     })

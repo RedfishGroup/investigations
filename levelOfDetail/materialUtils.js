@@ -314,6 +314,11 @@ export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
         })
     }
 
+    setFov(fov) {
+        this.uniforms.fov = { value: fov }
+        this.uniformsNeedUpdate = true
+    }
+
     setDepthTexture(texture) {
         if (texture && texture.isTexture) {
             this.uniforms.depthTexture = new THREE.Uniform(texture)
