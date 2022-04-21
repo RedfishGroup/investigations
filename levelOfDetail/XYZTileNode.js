@@ -228,6 +228,7 @@ export class XYZTileNode {
             makeSkirtGeometry(
                 await this.getElevation(),
                 this.getBounds(),
+                this.id,
                 homeMatrix
             ),
             material

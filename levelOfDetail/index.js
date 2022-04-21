@@ -497,7 +497,7 @@ function readTileData(tileTree, indexData, zoomData, width, height) {
     for (let i in tiles) {
         let tile = tileTree.getNodeByID(i)
 
-        if(i==0){
+        if (i == 0) {
             // This happens when an object does not have a tile ID. This is fine. The skirts dont have ids.
             // console.log('id is 0')
         } else if (!tile) {

@@ -6,7 +6,7 @@ export function geometryFromMartiniMesh(
     martiniMesh,
     elevation,
     bounds,
-    index,
+    tileIndex,
     matrix = new THREE.Matrix3()
 ) {
     if (martiniMesh && bounds) {
@@ -26,9 +26,11 @@ export function geometryFromMartiniMesh(
         )
         geometry.setAttribute(
             'tileIndex',
-            new THREE.BufferAttribute(
-                new Float32Array(maxPoints).fill(index),
-                1
+            new THREE.InstancedBufferAttribute(
+                new Float32Array([tileIndex]),
+                1,
+                false,
+                maxPoints - 1
             )
         )
 
@@ -111,7 +113,7 @@ function setIndex(geometry, indices) {
     geometry.index.needsUpdate = true
 }
 
-export function makeSkirtGeometry(elevation, bounds, matrix) {
+export function makeSkirtGeometry(elevation, bounds, tileIndex, matrix) {
     let { north, south, east, west } = bounds
 
     const dim = elevation.width
@@ -215,6 +217,15 @@ export function makeSkirtGeometry(elevation, bounds, matrix) {
     geometry.setAttribute(
         'position',
         new THREE.BufferAttribute(Float32Array.from(vertices), 3)
+    )
+    geometry.setAttribute(
+        'tileIndex',
+        new THREE.InstancedBufferAttribute(
+            new Float32Array([tileIndex]),
+            1,
+            false,
+            indices.length - 1
+        )
     )
 
     return geometry
