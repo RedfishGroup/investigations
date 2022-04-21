@@ -323,6 +323,10 @@ export class XYZTileNode {
                 node.bbox.geometry.dispose()
             }
             this.bbox = undefined
+            if(node.skirtMesh && node.skirtMesh.geometry) {
+                node.skirtMesh.geometry.dispose()
+            }
+            this.skirtMesh = undefined
 
             node.elevation = undefined
             node.parent = undefined
