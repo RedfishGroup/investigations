@@ -37,7 +37,7 @@ export class XYZTileNode {
      * @param {XYZTileNode} parent
      */
     constructor(x, y, z, parent) {
-        this.MAX_ZOOM = 15 // The maximum zoom level for the tiles
+        this.MAX_ZOOM = 14 // The maximum zoom level for the tiles
 
         this.x = x
         this.y = y
@@ -45,7 +45,7 @@ export class XYZTileNode {
         this.parent = parent
         this.children = []
         this.elevation = null
-        this.threeMesh = null
+        this.threeGroup = null
         this._lastMArtiniError = null
         this._isBusy = false
         // Reuse node ids. Look for gap in the nodeIDLookup. This is needed becasue we cant go over 255*256, because of the shader.
@@ -152,6 +152,20 @@ export class XYZTileNode {
         return this.martiniMesh
     }
 
+    async getThreeGroup(martiniError, homeMatrix, material) {
+        this._isBusy = true
+        if (!this.threeGroup || this.needsUpdate(martiniError)) {
+            await this.getTerrainMesh(martiniError, homeMatrix, material)
+            //await this.getSkirtMesh(homeMatrix, material)
+            this.threeGroup = new THREE.Group()
+            this.threeGroup.add(this.terrainMesh)
+            //this.threeGroup.add(this.skirtMesh)
+        }
+
+        this._isBusy = false
+        return this.threeGroup
+    }
+
     /**
      * Create and uppdate the 3d mesh for this node.
      *
@@ -160,15 +174,15 @@ export class XYZTileNode {
      * @param {THREE.Material} material
      * @returns {THREE.Mesh}
      */
-    async getThreeMesh(martiniError, homeMatrix, material) {
+    async getTerrainMesh(martiniError, homeMatrix, material) {
         if (this.needsUpdate(martiniError)) {
             this._isBusy = true
             const myElevation = await this.getElevation()
             const myMesh = await this.getMartiniMesh(martiniError)
 
-            if (this.threeMesh) {
+            if (this.terrainMesh) {
                 updateGeometry(
-                    this.threeMesh.geometry,
+                    this.terrainMesh.geometry,
                     myMesh,
                     myElevation,
                     this.getBounds(),
@@ -176,7 +190,7 @@ export class XYZTileNode {
                 )
             } else {
                 const bounds = this.getBounds()
-                this.threeMesh = new THREE.Mesh(
+                this.terrainMesh = new THREE.Mesh(
                     geometryFromMartiniMesh(
                         myMesh,
                         myElevation,
@@ -227,11 +241,10 @@ export class XYZTileNode {
             }
             this._isBusy = false
         }
-        return this.threeMesh
+        return this.terrainMesh
     }
 
     async getSkirtMesh(homeMatrix, material) {
-        this._isBusy = true
         this.skirtMesh = new THREE.Mesh(
             makeSkirtGeometry(
                 await this.getElevation(),
@@ -241,7 +254,6 @@ export class XYZTileNode {
             ),
             material
         )
-        this._isBusy = false
         return this.skirtMesh
     }
 
@@ -315,18 +327,28 @@ export class XYZTileNode {
                 })
             }
             delete XYZTileNode.#nodeIDLookup[node.id]
-            if(node.threeMesh && node.threeMesh.geometry) {
-                node.threeMesh.geometry.dispose()
+            if (node.terrainMesh) {
+                if (node.terrainMesh.parent) node.terrainMesh.remove()
+                if (node.terrainMesh.geometry)
+                    node.terrainMesh.geometry.dispose()
             }
-            node.threeMesh = undefined // for garbage collection
-            if(node.bbox && node.bbox.geometry) {
-                node.bbox.geometry.dispose()
-            }
-            this.bbox = undefined
-            if(node.skirtMesh && node.skirtMesh.geometry) {
-                node.skirtMesh.geometry.dispose()
+            node.terrainMesh = undefined // for garbage collection
+
+            if (node.skirtMesh) {
+                if (node.skirtMesh.parent) node.skirtMesh.remove()
+                if (node.skirtMesh.geometry) node.skirtMesh.geometry.dispose()
             }
             this.skirtMesh = undefined
+
+            if (node.threeGroup) {
+                if (node.threeGroup.parent) node.threeGroup.remove()
+            }
+
+            if (node.bbox) {
+                if (node.bbox.parent) node.bbox.remove()
+                if (node.bbox.geometry) node.bbox.geometry.dispose()
+            }
+            this.bbox = undefined
 
             node.elevation = undefined
             node.parent = undefined
@@ -362,7 +384,7 @@ export class XYZTileNode {
             this._lastMArtiniError = martiniError
             return true
         }
-        if (!this.threeMesh) {
+        if (!this.threeGroup) {
             return true
         }
         return false

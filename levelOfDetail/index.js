@@ -123,6 +123,7 @@ async function main() {
 
     // group for putting terrain tiles in
     const terrainGroup = new THREE.Group()
+    window.terrainGroup = terrainGroup
     scene.add(terrainGroup)
 
     // group for putting everything but terrain tiles in
@@ -141,9 +142,9 @@ async function main() {
 
     // camera viewing frustum
     const frustum = new Frustum({ far: 10, color: 0xff0000, camera: tileCam })
-    frustum.renderOrder = 1000
-    frustum.material.depthTest = false
-    frustum.material.depthWrite = false
+    //frustum.renderOrder = 1000
+    //frustum.material.depthTest = false
+    //frustum.material.depthWrite = false
     frustum.updatePosition()
 
     group.add(frustum)
@@ -156,12 +157,12 @@ async function main() {
         0.3,
         0.2
     )
-    lookVector.children[0].renderOrder = 1000
-    lookVector.children[1].renderOrder = 1000
-    lookVector.children[0].material.depthTest = false
-    lookVector.children[1].material.depthTest = false
-    lookVector.children[0].material.depthWrite = false
-    lookVector.children[1].material.depthWrite = false
+    // lookVector.children[0].renderOrder = 1000
+    // lookVector.children[1].renderOrder = 1000
+    // lookVector.children[0].material.depthTest = false
+    // lookVector.children[1].material.depthTest = false
+    // lookVector.children[0].material.depthWrite = false
+    // lookVector.children[1].material.depthWrite = false
 
     group.add(lookVector)
 
@@ -208,20 +209,19 @@ async function main() {
     })
 
     const tileTree = new XYZTileNode(x, y, z, null)
-    const threeMesh = await tileTree.getThreeMesh(
+    window.tileTree = tileTree
+    const threeGroup = await tileTree.getThreeGroup(
         martiniParams.error,
         globeReference.getMatrix(),
         elevationMaterial
     )
-    elevationMaterial.setMin(threeMesh.geometry.attributes.elevation.min)
-    elevationMaterial.setMax(threeMesh.geometry.attributes.elevation.max)
-    terrainGroup.add(threeMesh)
-
-    const skirtMesh = await tileTree.getSkirtMesh(
-        globeReference.getMatrix(),
-        elevationMaterial
+    elevationMaterial.setMin(
+        threeGroup.children[0].geometry.attributes.elevation.min
     )
-    terrainGroup.add(skirtMesh)
+    elevationMaterial.setMax(
+        threeGroup.children[0].geometry.attributes.elevation.max
+    )
+    terrainGroup.add(threeGroup)
 
     // dat.gui menu setup
     const gui = new GUI()
@@ -520,7 +520,7 @@ async function splitAllTiles(
 ) {
     return Promise.all(
         tileTree.getLeafNodes().map((node) => {
-            if(!node.canSplit()){
+            if (!node.canSplit()) {
                 return undefined
             }
             return splitNode(
@@ -549,23 +549,20 @@ async function splitNode(
 ) {
     node.split()
     const promises = node.getChildren().map(async (child) => {
-        await child.getThreeMesh(error, globeReference.getMatrix(), material)
-        await child.getSkirtMesh(globeReference.getMatrix(), material)
+        await child.getThreeGroup(error, globeReference.getMatrix(), material)
         return child
     })
     try {
         const results = await Promise.all(promises)
-        terrainGroup.remove(node.threeMesh)
-        terrainGroup.remove(node.skirtMesh)
+        terrainGroup.remove(node.threeGroup)
         bboxGroup.remove(node.bbox)
         for (let i in results) {
-            terrainGroup.add(results[i].threeMesh)
-            terrainGroup.add(results[i].skirtMesh)
+            terrainGroup.add(results[i].threeGroup)
             bboxGroup.add(results[i].bbox)
         }
         return results
     } catch (err) {
-        node.MAX_ZOOM = node.z 
+        node.MAX_ZOOM = node.z
         node.getChildren().forEach((child) => {
             child.removeNode()
         })
@@ -588,21 +585,18 @@ async function combineAllTiles(
         }
     })
     const promises = parents.map(async (parent) => {
-        await parent.getThreeMesh(error, globeReference.getMatrix(), material)
-        await parent.getSkirtMesh(globeReference.getMatrix(), material)
+        await parent.getThreeGroup(error, globeReference.getMatrix(), material)
         return parent
     })
     Promise.all(promises).then((parents) => {
         for (let i in parents) {
             let children = parents[i].getChildren()
             for (let j in children) {
-                terrainGroup.remove(children[j].threeMesh)
-                terrainGroup.remove(children[j].skirtMesh)
+                terrainGroup.remove(children[j].threeGroup)
                 bboxGroup.remove(children[j].bbox)
                 tileTree.removeNode(children[j])
             }
-            terrainGroup.add(parents[i].threeMesh)
-            terrainGroup.add(parent[i].skirtMesh)
+            terrainGroup.add(parents[i].threeGroup)
             bboxGroup.add(parents[i].bbox)
         }
         window.tilesNeedUpdate = true
@@ -625,19 +619,16 @@ async function combineNode(
     let node = tileTree.getNodeByID(id)
     let parent = node && node.parent
     if (node && parent) {
-        await parent.getThreeMesh(error, globeReference.getMatrix(), material)
-        await parent.getSkirtMesh(globeReference.getMatrix(), material)
+        await parent.getThreeGroup(error, globeReference.getMatrix(), material)
 
         let siblings = node.getSiblings()
         for (let i in siblings) {
-            terrainGroup.remove(siblings[i].threeMesh)
-            terrainGroup.remove(siblings[i].skirtMesh)
+            terrainGroup.remove(siblings[i].threeGroup)
             bboxGroup.remove(siblings[i].bbox)
             tileTree.removeNode(siblings[i])
         }
 
-        terrainGroup.add(parent.threeMesh)
-        terrainGroup.add(parent.skirtMesh)
+        terrainGroup.add(parent.threeGroup)
         bboxGroup.add(parent.bbox)
     }
 }
@@ -645,7 +636,7 @@ async function combineNode(
 const updateMeshes = debounced(
     async (error, tileTree, globeReference, material) => {
         for (let tm of tileTree.getLeafNodes()) {
-            tm.getThreeMesh(error, globeReference.getMatrix(), material)
+            tm.getThreeGroup(error, globeReference.getMatrix(), material)
         }
     },
     200,
