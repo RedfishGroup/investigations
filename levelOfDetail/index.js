@@ -190,7 +190,6 @@ async function main() {
     }
     let cameraParams = { angle: 0 }
 
-    const basicMaterial = new THREE.MeshBasicMaterial(materialParams)
     const depthMaterial = new DepthShaderMaterial(materialParams)
     const tileIndexMaterial = new TilePickingMaterial(materialParams)
     const elevationMaterial = new ElevationShaderMaterial(materialParams)
@@ -229,12 +228,9 @@ async function main() {
     const materialGUI = gui.addFolder('Material')
     materialGUI.open()
     materialGUI.addColor(materialParams, 'color').onChange((color) => {
-        basicMaterial.color = new THREE.Color(color)
-        basicMaterial.needsUpdate = true
         elevationMaterial.setColor(color)
     })
     materialGUI.add(materialParams, 'wireframe').onChange((bool) => {
-        basicMaterial.wireframe = bool
         elevationMaterial.wireframe = bool
     })
     materialGUI.add(bboxGroup, 'visible').name('bounding boxes')
@@ -255,7 +251,6 @@ async function main() {
                         bboxGroup,
                         martiniParams.error,
                         globeReference,
-                        elevationMaterial,
                         elevationMaterial
                     )
                     console.log('done', tileTree, tileTree.toString())
@@ -274,7 +269,6 @@ async function main() {
                         bboxGroup,
                         martiniParams.error,
                         globeReference,
-                        elevationMaterial,
                         elevationMaterial
                     )
                     console.log('done', tileTree, tileTree.toString())
@@ -394,7 +388,6 @@ async function main() {
                             bboxGroup,
                             martiniParams.error,
                             globeReference,
-                            elevationMaterial,
                             elevationMaterial
                         ).then(() => {
                             window.tilesNeedUpdate = true
@@ -443,7 +436,6 @@ async function main() {
                             bboxGroup,
                             martiniParams.error,
                             globeReference,
-                            elevationMaterial,
                             elevationMaterial
                         ).then(() => {
                             window.tilesNeedUpdate = true
@@ -524,8 +516,7 @@ async function splitAllTiles(
     bboxGroup,
     error,
     globeReference,
-    material,
-    skirtMaterial
+    material
 ) {
     return Promise.all(
         tileTree.getLeafNodes().map((node) => {
@@ -535,8 +526,7 @@ async function splitAllTiles(
                 bboxGroup,
                 error,
                 globeReference,
-                material,
-                skirtMaterial
+                material
             )
         })
     ).then(() => {
@@ -550,13 +540,12 @@ async function splitNode(
     bboxGroup,
     error,
     globeReference,
-    material,
-    skirtMaterial
+    material
 ) {
     node.split()
     const promises = node.getChildren().map(async (child) => {
         await child.getThreeMesh(error, globeReference.getMatrix(), material)
-        await child.getSkirtMesh(globeReference.getMatrix(), skirtMaterial)
+        await child.getSkirtMesh(globeReference.getMatrix(), material)
         return child
     })
     return Promise.all(promises).then((results) => {
@@ -577,8 +566,7 @@ async function combineAllTiles(
     bboxGroup,
     error,
     globeReference,
-    material,
-    skirtMaterial
+    material
 ) {
     let parents = []
     tileTree.getLeafNodes().map((node) => {
@@ -588,7 +576,7 @@ async function combineAllTiles(
     })
     const promises = parents.map(async (parent) => {
         await parent.getThreeMesh(error, globeReference.getMatrix(), material)
-        await parent.getSkirtMesh(globeReference.getMatrix(), skirtMaterial)
+        await parent.getSkirtMesh(globeReference.getMatrix(), material)
         return parent
     })
     Promise.all(promises).then((parents) => {
@@ -615,8 +603,7 @@ async function combineNode(
     bboxGroup,
     error,
     globeReference,
-    material,
-    skirtMaterial
+    material
 ) {
     // make sure that node exists, and that
     // parent exists, because we don't want
@@ -626,7 +613,7 @@ async function combineNode(
     let parent = node && node.parent
     if (node && parent) {
         await parent.getThreeMesh(error, globeReference.getMatrix(), material)
-        await parent.getSkirtMesh(globeReference.getMatrix(), skirtMaterial)
+        await parent.getSkirtMesh(globeReference.getMatrix(), material)
 
         let siblings = node.getSiblings()
         for (let i in siblings) {
