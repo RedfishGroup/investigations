@@ -156,10 +156,10 @@ export class XYZTileNode {
         this._isBusy = true
         if (!this.threeGroup || this.needsUpdate(martiniError)) {
             await this.getTerrainMesh(martiniError, homeMatrix, material)
-            //await this.getSkirtMesh(homeMatrix, material)
+            this.getSkirtMesh(homeMatrix, material)
             this.threeGroup = new THREE.Group()
             this.threeGroup.add(this.terrainMesh)
-            //this.threeGroup.add(this.skirtMesh)
+            this.threeGroup.add(this.skirtMesh)
         }
 
         this._isBusy = false
@@ -244,10 +244,10 @@ export class XYZTileNode {
         return this.terrainMesh
     }
 
-    async getSkirtMesh(homeMatrix, material) {
+    getSkirtMesh(homeMatrix, material) {
         this.skirtMesh = new THREE.Mesh(
             makeSkirtGeometry(
-                await this.getElevation(),
+                this.elevation,
                 this.getBounds(),
                 this.id,
                 homeMatrix
