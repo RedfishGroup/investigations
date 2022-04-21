@@ -167,18 +167,18 @@ async function main() {
 
     const center = {
         // Albuquerque
-        //Latitude: 35.19251772180017,
-        //Longitude: -106.42811011436379,
+        Latitude: 35.19251772180017,
+        Longitude: -106.42811011436379,
 
         // Shiprock
         //Latitude: 36.69165,
         //Longitude: -108.83866,
 
         // Everest
-        Latitude: 27.9881,
-        Longitude: 86.925,
+        // Latitude: 27.9881,
+        // Longitude: 86.925,
     }
-    const zoom = 7
+    const zoom = 9
     const [x, y, z] = latLonToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
     const globeReference = new GlobeReference({ x, y, z, scale: 10 })
@@ -380,7 +380,7 @@ async function main() {
             const tooLow = tileData.tooLow
             for (let t in tooLow) {
                 let result = tooLow[t]
-                if (!result.tile.isBusy()) {
+                if (!result.tile.isBusy() && result.tile.canSplit()) {
                     promises.push(
                         splitNode(
                             result.tile,
@@ -520,6 +520,9 @@ async function splitAllTiles(
 ) {
     return Promise.all(
         tileTree.getLeafNodes().map((node) => {
+            if(!node.canSplit()){
+                return undefined
+            }
             return splitNode(
                 node,
                 terrainGroup,
@@ -527,10 +530,12 @@ async function splitAllTiles(
                 error,
                 globeReference,
                 material
-            )
+            ).then(() => {
+                window.tilesNeedUpdate = true
+            })
         })
     ).then(() => {
-        window.tilesNeedUpdate = true
+        // window.tilesNeedUpdate = true
     })
 }
 
@@ -548,7 +553,8 @@ async function splitNode(
         await child.getSkirtMesh(globeReference.getMatrix(), material)
         return child
     })
-    return Promise.all(promises).then((results) => {
+    try {
+        const results = await Promise.all(promises)
         terrainGroup.remove(node.threeMesh)
         terrainGroup.remove(node.skirtMesh)
         bboxGroup.remove(node.bbox)
@@ -557,7 +563,14 @@ async function splitNode(
             terrainGroup.add(results[i].skirtMesh)
             bboxGroup.add(results[i].bbox)
         }
-    })
+        return results
+    } catch (err) {
+        node.MAX_ZOOM = node.z 
+        node.getChildren().forEach((child) => {
+            child.removeNode()
+        })
+        console.warn(err)
+    }
 }
 
 async function combineAllTiles(

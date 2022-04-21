@@ -37,7 +37,7 @@ export class XYZTileNode {
      * @param {XYZTileNode} parent
      */
     constructor(x, y, z, parent) {
-        this.MAX_ZOOM = 16 // The maximum zoom level for the tiles
+        this.MAX_ZOOM = 15 // The maximum zoom level for the tiles
 
         this.x = x
         this.y = y
@@ -78,6 +78,10 @@ export class XYZTileNode {
      */
     getNodeByID(id) {
         return XYZTileNode.#nodeIDLookup[id]
+    }
+
+    canSplit() {
+        return this.z < this.MAX_ZOOM
     }
 
     _createChildren() {
@@ -159,11 +163,14 @@ export class XYZTileNode {
     async getThreeMesh(martiniError, homeMatrix, material) {
         if (this.needsUpdate(martiniError)) {
             this._isBusy = true
+            const myElevation = await this.getElevation()
+            const myMesh = await this.getMartiniMesh(martiniError)
+
             if (this.threeMesh) {
                 updateGeometry(
                     this.threeMesh.geometry,
-                    await this.getMartiniMesh(martiniError),
-                    await this.getElevation(),
+                    myMesh,
+                    myElevation,
                     this.getBounds(),
                     homeMatrix
                 )
@@ -171,8 +178,8 @@ export class XYZTileNode {
                 const bounds = this.getBounds()
                 this.threeMesh = new THREE.Mesh(
                     geometryFromMartiniMesh(
-                        await this.getMartiniMesh(martiniError),
-                        await this.getElevation(),
+                        myMesh,
+                        myElevation,
                         bounds,
                         this.id,
                         homeMatrix
@@ -306,9 +313,13 @@ export class XYZTileNode {
                 })
             }
             delete XYZTileNode.#nodeIDLookup[node.id]
-            node.threeMesh.geometry.dispose()
+            if(node.threeMesh && node.threeMesh.geometry) {
+                node.threeMesh.geometry.dispose()
+            }
             node.threeMesh = undefined // for garbage collection
-            node.bbox.geometry.dispose()
+            if(node.bbox && node.bbox.geometry) {
+                node.bbox.geometry.dispose()
+            }
             this.bbox = undefined
 
             node.elevation = undefined
@@ -333,7 +344,7 @@ export class XYZTileNode {
     }
 
     /**
-     * Get all the children of this node, and create them if they don't exist.
+     * Get all the children of this node
      * @returns {[XYZTileNode, XYZTileNode, ...]}
      */
     getChildren() {
