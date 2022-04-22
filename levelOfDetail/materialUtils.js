@@ -226,7 +226,7 @@ export class ZoomPickingMaterial extends THREE.ShaderMaterial {
     }
 }
 
-export class TileNeedsUpdateMaterial extends THREE.ShaderMaterial {
+export class TilesNeedUpdateMaterial extends THREE.ShaderMaterial {
     constructor(options) {
         const side = options.side || THREE.FrontSide
         const wireframe = false

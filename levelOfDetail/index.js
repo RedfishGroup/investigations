@@ -16,7 +16,7 @@ import {
     TilePickingMaterial,
     TileIndexColorMaterial,
     ElevationShaderMaterial,
-    TileNeedsUpdateMaterial,
+    TilesNeedUpdateMaterial,
     DepthColorShaderMaterial,
     RidgeLineShaderMaterial,
 } from './materialUtils.js'
@@ -188,7 +188,7 @@ async function main() {
     const elevationMaterial = new ElevationShaderMaterial(materialParams)
     const depthColorMaterial = new DepthColorShaderMaterial(materialParams)
     const tileIndexColorMaterial = new TileIndexColorMaterial(materialParams)
-    const tileNeedsUpdateMaterial = new TileNeedsUpdateMaterial({
+    const tilesNeedUpdateMaterial = new TilesNeedUpdateMaterial({
         fov: tileCam.fov * (Math.PI / 180),
         scale: 1 / globeReference.getScale(),
         height,
@@ -299,7 +299,7 @@ async function main() {
 
         frustum.updateGeometry()
 
-        tileNeedsUpdateMaterial.setFov(tileCam.fov * (Math.PI / 180))
+        tilesNeedUpdateMaterial.setFov(tileCam.fov * (Math.PI / 180))
 
         window.tilesNeedUpdate = true
     })
@@ -331,7 +331,7 @@ async function main() {
             let indexData = renderToUint8Array(tileRenderer, scene, tileCam)
 
             // render zoom correction data
-            scene.overrideMaterial = tileNeedsUpdateMaterial
+            scene.overrideMaterial = tilesNeedUpdateMaterial
             let zoomData = renderToUint8Array(tileRenderer, scene, tileCam)
 
             // reset override material
