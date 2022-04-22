@@ -189,7 +189,7 @@ async function main() {
     const depthColorMaterial = new DepthColorShaderMaterial(materialParams)
     const tileIndexColorMaterial = new TileIndexColorMaterial(materialParams)
     const tileNeedsUpdateMaterial = new TileNeedsUpdateMaterial({
-        fov: tileCam.vfov * (Math.PI / 180),
+        fov: tileCam.fov * (Math.PI / 180),
         scale: 1 / globeReference.getScale(),
         height,
         depthTexture: depthTarget.texture,
@@ -291,7 +291,7 @@ async function main() {
     const camIntGUI = camGUI.addFolder('Intrinsics')
     camIntGUI.open()
     camIntGUI.add(cameraParams, 'fov', 5, 100).onChange((fov) => {
-        let f = tileCam.height / (2 * Math.tan((fov / 2) * (Math.PI / 180)))
+        let f = tileCam.width / (2 * Math.tan((fov / 2) * (Math.PI / 180)))
         tileCam.fx = f
         tileCam.fy = f
         tileCam.updateMatrix()
@@ -299,7 +299,7 @@ async function main() {
 
         frustum.updateGeometry()
 
-        tileNeedsUpdateMaterial.setFov(tileCam.vfov * (Math.PI / 180))
+        tileNeedsUpdateMaterial.setFov(tileCam.fov * (Math.PI / 180))
 
         window.tilesNeedUpdate = true
     })
