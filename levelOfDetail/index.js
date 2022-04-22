@@ -160,8 +160,12 @@ async function main() {
 
     const center = {
         // Albuquerque
-        Latitude: 35.19251772180017,
-        Longitude: -106.42811011436379,
+        //Latitude: 35.19251772180017,
+        //Longitude: -106.42811011436379,
+
+        // Santa Fe
+        Latitude: 35.687,
+        Longitude: -105.9378,
 
         // Shiprock
         //Latitude: 36.69165,
@@ -171,7 +175,7 @@ async function main() {
         // Latitude: 27.9881,
         // Longitude: 86.925,
     }
-    const zoom = 9
+    const zoom = 8
     const [x, y, z] = latLonToSlippyXYZ(center.Latitude, center.Longitude, zoom)
 
     const globeReference = new GlobeReference({ x, y, z, scale: 10 })
@@ -181,7 +185,41 @@ async function main() {
         color: 0xffaa00,
         wireframe: false,
     }
-    let cameraParams = { fov: tileCam.vfov, angle: 0 }
+    let cameraParams = {
+        fov: tileCam.vfov,
+        roll: 10,
+        azimuth: 0,
+        altitude:
+            -(180 / Math.PI) *
+            Math.acos(
+                new THREE.Vector3(0, 1, 0).dot(
+                    new THREE.Vector3(0, 1, -0.1).normalize()
+                )
+            ),
+    }
+    const setCameraLookVector = (altitude, azimuth, roll) => {
+        let lookVec = new THREE.Vector3(0, 1, 0)
+            .applyAxisAngle(new THREE.Vector3(1, 0, 0), altitude)
+            .applyAxisAngle(new THREE.Vector3(0, 0, 1), azimuth)
+        tileCam.lookAt(
+            new THREE.Vector3().addVectors(tileCam.position, lookVec)
+        )
+        tileCam.updateMatrix()
+        tileCam.updateProjectionMatrix()
+        let rotObjectMatrix = new THREE.Matrix4().makeRotationAxis(
+            new THREE.Vector3(0, 0, 1),
+            roll
+        )
+        tileCam.matrix.multiply(rotObjectMatrix)
+        tileCam.rotation.setFromRotationMatrix(tileCam.matrix)
+        tileCam.updateMatrix()
+        tileCam.updateProjectionMatrix()
+
+        frustum.updatePosition()
+        lookVector.setDirection(lookVec)
+
+        window.tilesNeedUpdate = true
+    }
 
     const depthMaterial = new DepthShaderMaterial(materialParams)
     const tileIndexMaterial = new TilePickingMaterial(materialParams)
@@ -273,20 +311,26 @@ async function main() {
     camGUI.open()
     const camPosGUI = camGUI.addFolder('Position')
     camPosGUI.open()
-    camPosGUI.add(cameraParams, 'angle', 0, 2 * Math.PI).onChange((angle) => {
-        let lookVec = new THREE.Vector3(0, 1, -0.1).applyAxisAngle(
-            new THREE.Vector3(0, 0, 1),
-            angle
+    camPosGUI.add(cameraParams, 'azimuth', 0, 360).onChange(() => {
+        setCameraLookVector(
+            cameraParams.altitude * (Math.PI / 180),
+            cameraParams.azimuth * (Math.PI / 180),
+            cameraParams.roll * (Math.PI / 180)
         )
-        tileCam.lookAt(
-            new THREE.Vector3().addVectors(tileCam.position, lookVec)
+    })
+    camPosGUI.add(cameraParams, 'altitude', -70, 70).onChange(() => {
+        setCameraLookVector(
+            cameraParams.altitude * (Math.PI / 180),
+            cameraParams.azimuth * (Math.PI / 180),
+            cameraParams.roll * (Math.PI / 180)
         )
-        tileCam.updateMatrix()
-        tileCam.updateProjectionMatrix()
-        frustum.updatePosition()
-        lookVector.setDirection(lookVec)
-
-        window.tilesNeedUpdate = true
+    })
+    camPosGUI.add(cameraParams, 'roll', -70, 70).onChange(() => {
+        setCameraLookVector(
+            cameraParams.altitude * (Math.PI / 180),
+            cameraParams.azimuth * (Math.PI / 180),
+            cameraParams.roll * (Math.PI / 180)
+        )
     })
     const camIntGUI = camGUI.addFolder('Intrinsics')
     camIntGUI.open()
