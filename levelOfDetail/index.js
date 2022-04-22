@@ -187,7 +187,7 @@ async function main() {
     }
     let cameraParams = {
         fov: tileCam.vfov,
-        roll: 10,
+        roll: 0,
         azimuth: 0,
         altitude:
             -(180 / Math.PI) *
@@ -325,7 +325,7 @@ async function main() {
             cameraParams.roll * (Math.PI / 180)
         )
     })
-    camPosGUI.add(cameraParams, 'roll', -70, 70).onChange(() => {
+    camPosGUI.add(cameraParams, 'roll', -50, 50).onChange(() => {
         setCameraLookVector(
             cameraParams.altitude * (Math.PI / 180),
             cameraParams.azimuth * (Math.PI / 180),
